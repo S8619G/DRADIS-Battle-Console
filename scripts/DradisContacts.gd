@@ -8,6 +8,8 @@ signal viper_launch_played(count: int)
 signal hostile_intercepted(viper_id: String, hostile_id: String)
 signal ship_damaged(amount: float, hull_remaining: float)
 signal ftl_jumped
+## 1.08: a Heavy Raider breach took FTL offline (true) or the hack ended (false).
+signal ftl_offline_changed(offline: bool)
 signal basestar_identified(contact_id: String)
 signal basestar_destroyed(contact_id: String)
 signal wave_changed(wave_number: int)
@@ -136,6 +138,12 @@ const SMALL_HOSTILE_KINDS := ["raider"]
 @export_range(5.0, 180.0) var ftl_recharge_seconds: float = 45.0
 @export_range(2.0, 30.0) var post_jump_safe_seconds: float = 8.0
 @export var ftl_starts_ready: bool = true
+## 1.08: while any Heavy Raider has broken through (hull drain), FTL is OFFLINE and
+## cannot be used, manual or AUTO. When the hack ends, the charge restarts from 0%.
+@export var ftl_offline_on_breach: bool = true
+## Seconds the FTL takes to rebuild from 0% after a breach ends (normal recharge is
+## Ftl Recharge Seconds; a faster rebuild keeps FTL a usable escape between breaches).
+@export_range(5.0, 180.0) var ftl_breach_recharge_seconds: float = 45.0
 @export_range(-40.0, 0.0) var jump_volume_db: float = -8.0
 
 @export_group("Nuclear Threat")
@@ -404,6 +412,10 @@ const SMALL_HOSTILE_KINDS := ["raider"]
 @export_range(1.0, 10.0) var squadron_spread_penalty: float = 3.0
 ## Gap between Vipers in the shared patrol formation (keep under the join distance).
 @export_range(0.01, 0.07) var formation_spacing: float = 0.02
+## 1.08: while a Resurrection Ship is on the scope, this many Vipers break off from the
+## squadron to attack it (0 = the 1.07 behavior, only when nothing else is left).
+## If one is lost or returns, another takes its place.
+@export_range(0, 6) var vipers_on_resurrection_ship: int = 1
 
 @export_group("Missile Visibility")
 ## 1.07: enemy missiles pulse so the eye picks them out; they never fully vanish.
@@ -516,6 +528,15 @@ var viper_squadrons: Array = []
 var viper_claims := {}
 var squadron_patrol_angle := 0.0
 var missile_retargets := 0
+## 1.08: FTL taken offline by a Heavy Raider breach.
+var ftl_offline: bool = false
+## 1.08: enemies destroyed this battle, by kind (saved with a new high score).
+var kills: Dictionary = {}
+const KILL_KINDS := ["raider", "heavy_raider", "missile", "nuke", "baseship", "resurrection_ship"]
+var ftl_offline_count: int = 0
+## 1.08: the current recharge is the rebuild after a breach (its own length).
+var ftl_rebuilding_after_breach: bool = false
+var ftl_breach_rebuild_total: float = 45.0
 ## 1.07: when the Firewall became unusable during the current hack (-1 = not), and
 ## whether the EMP is now offered for this hack.
 var firewall_out_since := -1.0
@@ -745,6 +766,7 @@ func _process(delta: float) -> void:
 		_update_heavy_raiders(delta)
 		_update_resurrection_spawning(delta)
 		_update_resurrection_alert()
+	_update_ftl_offline()
 	if auto_spawn and safe_remaining <= 0.0 and not is_defeated():
 		spawn_countdown -= delta
 		wave_countdown -= delta
@@ -1038,6 +1060,7 @@ func _resolve_missiles() -> void:
 			missile.next_battery_shot = battle_time + maxf(0.1, battery_shot_interval)
 			if rng.randf() < clampf(prox_success_chance, 0.0, 0.95):
 				prox_kills += 1
+				_count_kill("missile")
 				var battery_points := points_for(battery_kill_points)
 				battery_kill_score += battery_points
 				_add_points(battery_points)
@@ -1099,7 +1122,27 @@ func set_prox_defense(enabled: bool) -> void:
 	_set_status("DEFENSE BATTERY FIRING | STANDARD MISSILES ONLY", 3.0)
 
 func can_jump() -> bool:
-	return not is_defeated() and ftl_recharge_remaining <= 0.0
+	return not is_defeated() and not ftl_offline and ftl_recharge_remaining <= 0.0
+
+## 1.08: a breach (any Heavy Raider draining the hull) holds FTL offline with its charge
+## at 0%. Once no Heavy Raider is draining (EMP, destroyed, out of range), it recharges.
+func _update_ftl_offline() -> void:
+	var offline := ftl_offline_on_breach and not is_defeated() and active_hackers() > 0
+	if offline:
+		ftl_breach_rebuild_total = maxf(1.0, ftl_breach_recharge_seconds)
+		ftl_recharge_remaining = ftl_breach_rebuild_total
+		ftl_rebuilding_after_breach = true
+	elif ftl_rebuilding_after_breach and ftl_recharge_remaining <= 0.0:
+		ftl_rebuilding_after_breach = false
+	if offline == ftl_offline:
+		return
+	ftl_offline = offline
+	if offline:
+		ftl_offline_count += 1
+		_set_status("HACK BREACH | FTL OFFLINE | EMP OR DESTROY THE HEAVY RAIDER", 4.0)
+	else:
+		_set_status("FTL BACK ONLINE | RECHARGING", 3.0)
+	ftl_offline_changed.emit(offline)
 
 func request_ftl_jump() -> bool:
 	if not can_jump():
@@ -1133,6 +1176,7 @@ func request_ftl_jump() -> bool:
 	own_fire_remaining = own_missile_interval
 	launch_cooldown_remaining = 0.0
 	ftl_recharge_remaining = maxf(1.0, ftl_recharge_seconds)
+	ftl_rebuilding_after_breach = false
 	safe_remaining = maxf(1.0, post_jump_safe_seconds)
 	spawn_countdown = 0.8
 	wave_countdown = 0.0
@@ -1186,6 +1230,12 @@ func reset_battle() -> void:
 	viper_claims.clear()
 	squadron_patrol_angle = 0.0
 	missile_retargets = 0
+	ftl_offline = false
+	ftl_offline_count = 0
+	ftl_rebuilding_after_breach = false
+	kills = {}
+	for kind in KILL_KINDS:
+		kills[kind] = 0
 	emp_awards_earned = 0
 	emp_uses = 0
 	emp_heavies_overloaded = 0
@@ -1350,6 +1400,10 @@ func _play_launch(count: int) -> void:
 	viper_launch_played.emit(count)
 
 func _hostile_target(viper: Dictionary, excluded: Array[String]) -> Dictionary:
+	# 1.08: a set number of Vipers is assigned to a Resurrection Ship on the scope.
+	var resurrection := _resurrection_assignment(viper, excluded)
+	if not resurrection.is_empty():
+		return resurrection
 	# Raiders and missiles keep Vipers busy; they break away for Heavy Raiders only when clear.
 	var primary := _viper_target_of(viper, excluded, ["raider", "missile"])
 	if not primary.is_empty():
@@ -1359,6 +1413,21 @@ func _hostile_target(viper: Dictionary, excluded: Array[String]) -> Dictionary:
 		return heavy
 	# Last: the Resurrection Ship, the only capital ship Vipers will attack.
 	return _viper_target_of(viper, excluded, ["resurrection_ship"])
+
+## 1.08: the Resurrection Ship, if this Viper already attacks it or a place is free.
+func _resurrection_assignment(viper: Dictionary, excluded: Array[String]) -> Dictionary:
+	if vipers_on_resurrection_ship <= 0:
+		return {}
+	var ship := resurrection_ship()
+	if ship.is_empty() or excluded.has(ship.id):
+		return {}
+	if viper.get("target_id", "") == ship.id:
+		return ship
+	var assigned := 0
+	for other in contacts:
+		if other.id != viper.id and Icons.is_viper(other.kind) and not is_returning(other) and other.get("target_id", "") == ship.id:
+			assigned += 1
+	return ship if assigned < vipers_on_resurrection_ship else {}
 
 ## 1.07: slot position in the shared Viper patrol formation (a shallow V).
 func formation_point(slot: int, count: int) -> Vector3:
@@ -1639,7 +1708,9 @@ func hull_percent() -> int:
 func ftl_percent() -> int:
 	if ftl_recharge_remaining <= 0.0:
 		return 100
-	return clampi(1 + floori(99.0 * (1.0 - ftl_recharge_remaining / maxf(1.0, ftl_recharge_seconds))), 1, 99)
+	# 1.08: measured against the recharge in progress (normal, or the rebuild after a breach).
+	var total := ftl_breach_rebuild_total if ftl_rebuilding_after_breach else ftl_recharge_seconds
+	return clampi(1 + floori(99.0 * (1.0 - ftl_recharge_remaining / maxf(1.0, total))), 1, 99)
 
 func _update_repair(delta: float) -> void:
 	if is_defeated() or hull >= max_hull:
@@ -2217,6 +2288,7 @@ func _update_special_projectiles(delta: float) -> void:
 func _award_destroyed(contact: Dictionary) -> void:
 	if is_defeated() or contact.is_empty() or scored_contacts.has(contact.id) or find_contact(contact.id).is_empty():
 		return
+	_count_kill(contact.kind)
 	var points := 0
 	match contact.kind:
 		"raider": points = fighter_points
@@ -2228,6 +2300,18 @@ func _award_destroyed(contact: Dictionary) -> void:
 	scored_contacts[contact.id] = true
 	_destruction_effect(contact)
 	_add_points(points_for(points))
+
+## 1.08: counts one destroyed enemy for the battle stats.
+func _count_kill(kind: String) -> void:
+	if kind in KILL_KINDS:
+		kills[kind] = int(kills.get(kind, 0)) + 1
+
+## 1.08: a copy of the battle stats for the high-score table.
+func battle_stats() -> Dictionary:
+	var stats := {}
+	for kind in KILL_KINDS:
+		stats[kind] = int(kills.get(kind, 0))
+	return stats
 
 ## Adds already-multiplied points to the score and earned total, then checks the
 ## bonus repairs and (1.05) the Double Missile bonus.

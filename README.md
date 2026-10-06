@@ -14,7 +14,7 @@ A tactical defense game for Windows (x64 and arm64) and Mac (Apple M-series and 
 - Viper squadrons that split up to engage and rejoin when the area is clear.
 - Raptors for nuclear missiles and Basestars, ship missiles that change target, a defense battery for close missiles, and a firewall and EMP against Heavy Raider hacking.
 - Rapid Repair, FTL jumps, Easy, Normal and Hard difficulty, and optional auto modes.
-- High scores and settings saved on the computer, with a session log for troubleshooting.
+- High scores with per-battle stats (hover or tap an entry) and the best score shown during play; settings saved on the computer, with a session log for troubleshooting.
 
 ## Supported computers
 
@@ -42,7 +42,7 @@ The console buttons along the bottom:
 | Button | What it does |
 |---|---|
 | RAPID REPAIR | Uses a repair charge: +25% hull over 5 seconds. |
-| FTL JUMP | Jumps away and clears the scope, at a cost of 3,000 points. |
+| FTL JUMP | Jumps away and clears the scope, at a cost of 3,000 points. Offline while a Heavy Raider is draining the hull. |
 | DEFENSE BATTERY | Flak against missiles close to the ship. |
 | FIREWALL / EMP | Blocks a Heavy Raider hack. When the firewall runs out, the button splits to offer an EMP if a charge is ready. |
 | LAUNCH VIPERS | Launches Vipers to intercept Raiders and missiles. |

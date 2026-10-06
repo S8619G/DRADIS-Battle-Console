@@ -59,10 +59,20 @@ const SessionLog = preload("res://scripts/SessionLog.gd")
 ## How many session files to keep (oldest are deleted).
 @export_range(1, 50) var log_keep_files: int = 10
 
+## 1.08: the Settings version text opens this page.
+@export var github_url: String = "https://github.com/S8619G/DRADIS-Battle-Console"
+
 @export_group("High Scores")
 ## Saved in Godot's user data folder, so scores persist between runs.
 @export var high_score_file: String = "user://dradis_high_scores.json"
 @export_range(3, 20) var high_score_slots: int = 10
+## 1.08: small BEST score on the SCORE caption line, to its left (there is no room
+## above it inside the header frame).
+@export var show_best_score: bool = true
+@export_range(10, 24) var best_score_font_size: int = 15
+@export var best_score_color := Color(0.72, 0.66, 0.70, 0.85)
+## 1.08: hovering or tapping a high-score entry shows its battle stats.
+@export var show_score_stats: bool = true
 
 var shown_score: float = 0.0
 var was_defeated: bool = false
@@ -89,6 +99,9 @@ var session_log: Node
 ## Tests set this so opening the log folder is recorded without opening a window.
 var shell_dry_run: bool = false
 var log_folder_opens: int = 0
+var github_opens: int = 0
+## The last folder or page handed to the system (for tests).
+var last_shell_target: String = ""
 
 @onready var dome: Control = $CenterContainer/Dome
 @onready var tuning_panel: Panel = $TuningPanel
@@ -109,12 +122,19 @@ var log_folder_opens: int = 0
 ## 1.07: right half of the split FIREWALL button, shown only while the EMP is offered.
 var emp_split_button: Button
 var firewall_split := false
+## 1.08: BEST score line and the high-score stats box.
+var best_label: Label
+var stats_box: PanelContainer
+var stats_label: Label
+var stats_row: int = -1
+var stats_pinned: bool = false
 
 func _ready() -> void:
 	tuning_panel.visible = false  # F1 opens tuning without obscuring the game HUD.
 	_wire_tuning_controls()
 	_ensure_audio_loops()
 	_build_high_score_board()
+	_build_best_label()
 	_center_title()
 	_build_settings()
 	_build_game_over_quit()
@@ -177,6 +197,7 @@ func _build_settings() -> void:
 	settings_panel.effects_preview.connect(_preview_effects)
 	settings_panel.quit_requested.connect(quit_game)
 	settings_panel.open_logs_requested.connect(open_log_folder)
+	settings_panel.open_github_requested.connect(open_github_page)
 	settings_panel.version_text = version_text()
 	# One line in Godot's log file per start, to help match a log to a build.
 	print("[DRADIS] DRADIS Battle Console %s | %s | difficulty %s | auto options %d | remember settings %s" % [
@@ -217,6 +238,7 @@ func _start_session_log() -> void:
 	session_log.start(self)
 	session_log.write_start(version_text(), settings, GameSettings.DIFFICULTY_NAMES[settings.difficulty], contacts.auto_options_on())
 	contacts.wave_changed.connect(func(number: int) -> void: log_event("wave %d" % number))
+	contacts.ftl_offline_changed.connect(func(offline: bool) -> void: log_event("FTL %s | hull %d%%" % ["offline (hack breach)" if offline else "back online", roundi(contacts.hull)]))
 	contacts.ftl_jumped.connect(func() -> void: log_event("FTL jump | hull %d%% | auto %s" % [roundi(contacts.hull), "yes" if contacts.auto_ftl else "no"]))
 
 ## Writes one EVENT line to the session log (no-op when logging is off).
@@ -224,15 +246,27 @@ func log_event(text: String) -> void:
 	if is_instance_valid(session_log):
 		session_log.event("%s | battle %.1fs" % [text, contacts.battle_time])
 
-## Settings version link: shows the session logs in Finder or Explorer.
+## Settings "!" icon (1.08): shows the app data folder, with the session logs in its
+## "logs" folder, in Finder or Explorer.
 func open_log_folder() -> int:
 	log_folder_opens += 1
-	var path: String = session_log.folder_path() if is_instance_valid(session_log) else ProjectSettings.globalize_path("user://logs")
-	DirAccess.make_dir_recursive_absolute(path)
-	log_event("open log folder")
+	var logs: String = session_log.folder_path() if is_instance_valid(session_log) else ProjectSettings.globalize_path("user://logs")
+	DirAccess.make_dir_recursive_absolute(logs)
+	var path: String = OS.get_user_data_dir()
+	last_shell_target = path
+	log_event("open app data folder")
 	if shell_dry_run:
 		return OK
 	return OS.shell_open(path)
+
+## Settings version link (1.08): opens the GitHub page in the default browser.
+func open_github_page() -> int:
+	github_opens += 1
+	last_shell_target = github_url
+	log_event("open GitHub page")
+	if shell_dry_run or github_url.is_empty():
+		return OK
+	return OS.shell_open(github_url)
 
 func _on_node_added(node: Node) -> void:
 	if node is AudioStreamPlayer and node != sweep_loop and is_ancestor_of(node):
@@ -399,7 +433,10 @@ func _process(delta: float) -> void:
 	_tip(launch_button, "Launch interceptors from below. Active: %d / %d" % [contacts.count_vipers(), contacts.max_vipers])
 	ftl_button.disabled = not contacts.can_jump()
 	var ftl_tag := "AUTO " if contacts.auto_ftl else ""
-	ftl_button.text = ("FTL JUMP\n%s-%d POINTS" % [ftl_tag, contacts.ftl_score_cost]) if contacts.ftl_recharge_remaining <= 0.0 else "FTL JUMP\n%sCHARGING %ds" % [ftl_tag, ceili(contacts.ftl_recharge_remaining)]
+	if contacts.ftl_offline:
+		ftl_button.text = "FTL JUMP\n%sOFFLINE" % ftl_tag
+	else:
+		ftl_button.text = ("FTL JUMP\n%s-%d POINTS" % [ftl_tag, contacts.ftl_score_cost]) if contacts.ftl_recharge_remaining <= 0.0 else "FTL JUMP\n%sCHARGING %ds" % [ftl_tag, ceili(contacts.ftl_recharge_remaining)]
 	_tip(ftl_button, "Escape for %d points (score cannot go below zero). Damage and remaining defense reserve are retained." % contacts.ftl_score_cost)
 	prox_button.disabled = not contacts.can_fire_battery()
 	prox_button.set_pressed_no_signal(contacts.prox_active)
@@ -444,6 +481,8 @@ func _process(delta: float) -> void:
 		repair_button.text = "RAPID REPAIR\n%s+%d%% / %d CHARGE%s" % [repair_tag, int(contacts.rapid_repair_percent), contacts.repair_charges, "" if contacts.repair_charges == 1 else "S"]
 	_tip(repair_button, "Restore up to %d%% of maximum hull over %.1f seconds per charge. Bonus charges at %d, %d and %d earned points, then every %d more; FTL penalties do not reduce progress." % [int(contacts.rapid_repair_percent), contacts.rapid_repair_seconds, contacts.repair_bonus_threshold(1), contacts.repair_bonus_threshold(2), contacts.repair_bonus_threshold(3), contacts.later_bonus_step])
 	score_label.text = str(int(shown_score))
+	best_label.visible = show_best_score
+	best_label.text = "BEST %d" % best_score()
 	# Warm flash for nuke explosions, blue-white for an FTL jump (whichever is stronger).
 	var warm: float = contacts.screen_flash_alpha()
 	var jump: float = contacts.ftl_screen_alpha()
@@ -641,6 +680,17 @@ func _build_high_score_board() -> void:
 			rows.add_child(label)
 			row.append(label)
 		score_rows.append(row)
+		# 1.08: an invisible hover/tap area over the whole row opens its battle stats.
+		var hit := Control.new()
+		hit.name = "StatsHit%d" % index
+		hit.position = Vector2(0.0, index * 26.0)
+		hit.size = Vector2(380.0, 26.0)
+		hit.mouse_filter = Control.MOUSE_FILTER_STOP
+		hit.mouse_entered.connect(_on_score_row_hover.bind(index, true))
+		hit.mouse_exited.connect(_on_score_row_hover.bind(index, false))
+		hit.gui_input.connect(_on_score_row_input.bind(index))
+		rows.add_child(hit)
+	_build_stats_box()
 	var entry: Control = $CenterContainer/Dome/GameOverPanel/Entry
 	var up_icon := _arrow_icon(true)
 	var down_icon := _arrow_icon(false)
@@ -656,6 +706,106 @@ func _build_high_score_board() -> void:
 	entry.get_node("Enter").pressed.connect(submit_initials)
 	board = HighScores.load_board(high_score_file, high_score_slots)
 
+## 1.08: the small box with one entry's battle stats (shown on hover or tap).
+func _build_stats_box() -> void:
+	stats_box = PanelContainer.new()
+	stats_box.name = "ScoreStats"
+	stats_box.visible = false
+	stats_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.06, 0.02, 0.05, 0.96)
+	style.border_color = Color(1.0, 0.6, 0.78, 0.8)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(4)
+	style.content_margin_left = 14
+	style.content_margin_right = 14
+	style.content_margin_top = 8
+	style.content_margin_bottom = 8
+	stats_box.add_theme_stylebox_override("panel", style)
+	stats_label = Label.new()
+	stats_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stats_label.add_theme_font_size_override("font_size", 16)
+	stats_label.add_theme_color_override("font_color", Color(0.93, 0.88, 0.91))
+	stats_box.add_child(stats_label)
+	game_over_panel.add_child(stats_box)
+
+## 1.08: the text for one entry's stats; entries saved before 1.08 have none.
+func score_stats_text(entry: Dictionary) -> String:
+	var names := {"E": "EASY", "N": "NORMAL", "H": "HARD"}
+	var head := "%s  %d  |  WAVE %d  |  %s" % [entry.get("initials", "---"), int(entry.get("score", 0)), int(entry.get("wave", 1)), names.get(entry.get("difficulty", "N"), "NORMAL")]
+	var stats: Dictionary = entry.get("stats", {})
+	if stats.is_empty():
+		return head + "\nNO BATTLE STATS (SAVED BEFORE 1.08)"
+	var total := 0
+	for kind in HighScores.STAT_KINDS:
+		total += int(stats.get(kind, 0))
+	return head + "\nENEMIES DESTROYED  %d\nRAIDERS %d   HEAVY RAIDERS %d\nMISSILES %d   NUKES %d\nBASESTARS %d   RESURRECTION SHIPS %d" % [
+		total, int(stats.get("raider", 0)), int(stats.get("heavy_raider", 0)), int(stats.get("missile", 0)),
+		int(stats.get("nuke", 0)), int(stats.get("baseship", 0)), int(stats.get("resurrection_ship", 0))]
+
+## 1.08: shows (or with -1 hides) the stats for a high-score row.
+func show_score_stats_for(index: int) -> bool:
+	if not show_score_stats or index < 0 or index >= board.scores.size() or not game_over_panel.visible:
+		stats_row = -1
+		stats_pinned = false
+		if stats_box:
+			stats_box.visible = false
+		return false
+	stats_row = index
+	stats_label.text = score_stats_text(board.scores[index])
+	stats_box.size = Vector2.ZERO
+	stats_box.reset_size()
+	var rows: Control = game_over_panel.get_node("Rows")
+	var box_size := stats_box.get_combined_minimum_size()
+	# Just below the row, or above it near the bottom of the table; centred on the panel.
+	var y := rows.position.y + (index + 1) * 26.0 + 4.0
+	if y + box_size.y > game_over_panel.size.y - 8.0:
+		y = rows.position.y + index * 26.0 - box_size.y - 4.0
+	stats_box.position = Vector2((game_over_panel.size.x - box_size.x) * 0.5, maxf(8.0, y))
+	stats_box.visible = true
+	return true
+
+func _on_score_row_hover(index: int, entered: bool) -> void:
+	if entered:
+		show_score_stats_for(index)
+	elif stats_row == index and not stats_pinned:
+		show_score_stats_for(-1)
+
+## A tap (touch) or click keeps the stats open; tapping the same row again closes them.
+func _on_score_row_input(event: InputEvent, index: int) -> void:
+	var pressed: bool = (event is InputEventScreenTouch and event.pressed) or (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT)
+	if not pressed:
+		return
+	if stats_pinned and stats_row == index:
+		show_score_stats_for(-1)
+	elif show_score_stats_for(index):
+		stats_pinned = true
+
+## 1.08: the small BEST score, on the SCORE caption line just left of "SCORE".
+func _build_best_label() -> void:
+	best_label = Label.new()
+	best_label.name = "BestScore"
+	best_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	best_label.anchor_left = 1.0
+	best_label.anchor_right = 1.0
+	var caption: Label = $ScoreCaption
+	var caption_width := caption.get_theme_font("font").get_string_size(caption.text, HORIZONTAL_ALIGNMENT_LEFT, -1, caption.get_theme_font_size("font_size")).x
+	# From just right of the gear icon (1920-wide layout) to just left of "SCORE".
+	best_label.offset_left = gear_rect.end.x + 8.0 - 1920.0
+	best_label.offset_right = caption.offset_right - caption_width - 18.0
+	best_label.offset_top = caption.offset_top
+	best_label.offset_bottom = caption.offset_bottom
+	best_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	best_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	best_label.add_theme_font_size_override("font_size", best_score_font_size)
+	best_label.add_theme_color_override("font_color", best_score_color)
+	add_child(best_label)
+	move_child(best_label, $ScoreCaption.get_index())
+
+## Best saved score, or the current score once it is higher.
+func best_score() -> int:
+	return maxi(HighScores.best_score(board.scores), contacts.score)
+
 func _arrow_icon(pointing_up: bool) -> Texture2D:
 	# The built-in font has no arrow characters, so draw a small smooth triangle.
 	var points := "2,12 9,3 16,12" if pointing_up else "2,3 9,12 16,3"
@@ -667,6 +817,7 @@ func _arrow_icon(pointing_up: bool) -> Texture2D:
 
 func begin_game_over() -> void:
 	board = HighScores.load_board(high_score_file, high_score_slots)
+	show_score_stats_for(-1)
 	highlight_row = -1
 	entry_slot = 0
 	var last := HighScores.clean_initials(board.last_initials)
@@ -693,7 +844,7 @@ func submit_initials() -> int:
 	if not entry_active:
 		return -1
 	entry_active = false
-	highlight_row = HighScores.insert(board.scores, entry_initials(), contacts.score, contacts.wave, high_score_slots, contacts.difficulty_letter())
+	highlight_row = HighScores.insert(board.scores, entry_initials(), contacts.score, contacts.wave, high_score_slots, contacts.difficulty_letter(), contacts.battle_stats())
 	board.last_initials = entry_initials()
 	if not HighScores.save_board(high_score_file, board.scores, board.last_initials):
 		board.note = "HIGH SCORE COULD NOT BE SAVED"

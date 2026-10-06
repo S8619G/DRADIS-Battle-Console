@@ -1,4 +1,4 @@
-# DRADIS Battle Console 1.07 User Guide
+# DRADIS Battle Console 1.08 User Guide
 
 This is the full guide that ships with the editable project. In the GitHub repository it lives in `docs/`, the per-version changelogs are combined in `CHANGELOG.md`, and the `references` folder is not included.
 
@@ -6,19 +6,19 @@ This is the full guide that ships with the editable project. In the GitHub repos
 
 DRADIS Battle Console is an unofficial, non-commercial fan project and is not affiliated with or endorsed by the owners of Battlestar Galactica. See `NOTICE.md` at the top of the repository for the full disclaimer and the photosensitivity warning.
 
-This complete, editable project is version 1.07 of DRADIS Battle Console, a full build. It builds on 1.06 (EMP defense, Rapid Repair sound and glow, missiles on top, hover pop-ups off, the version link in Settings), 1.05 (battery kill points, ship missiles at nukes, the Double Missile bonus, the session log), 1.04 (explosions, speed by difficulty, Auto Rapid Repair, Remember Settings), 1.03 (auto launch, auto FTL, FTL flash, Quit, window fit), 1.02 (multi-hit nukes, Viper squadrons) and 1.01 (Settings, volumes, difficulty, auto battery and firewall). Version 1.07 adds:
+This complete, editable project is version 1.08 of DRADIS Battle Console, a full build. It runs on Windows PCs with Intel or AMD processors (x64), Windows PCs with ARM processors (arm64), and Macs with Apple M-series chips or Intel processors (one Universal Mac app). It builds on 1.07 (split FIREWALL | EMP button, enemy missile pulse, missiles that change target, short tags, squadrons that split and rejoin), 1.06 (EMP defense, Rapid Repair sound and glow), 1.05 (battery kill points, the Double Missile bonus, the session log), 1.04 (explosions, speed by difficulty, Auto Rapid Repair, Remember Settings), 1.03 (auto launch, auto FTL, FTL flash, Quit, window fit), 1.02 (multi-hit nukes, Viper squadrons) and 1.01 (Settings, volumes, difficulty, auto battery and firewall). Version 1.08 adds:
 
-- **FIREWALL | EMP split button**: the EMP no longer covers INTRUSION DETECTION on the ship. While a Heavy Raider hacks, an EMP charge is ready and the Firewall has run out for 2 seconds, the FIREWALL button splits into FIREWALL and a blue EMP half (see EMP below).
-- **Enemy missiles pulse**: their brightness swings between full and 35%, twice a second, so they are easy to pick out on a busy scope. They never vanish.
-- **Missiles change target**: a ship or Raptor missile whose target is destroyed (or leaves, or docks after an EMP) turns toward the nearest enemy it can attack instead of disappearing.
-- **Shorter tags**: Raiders, Vipers and Raptors show only RAIDER, VIPER or RAPTOR; squadrons show VIPERS x2, VIPERS x3; missiles have no tag.
-- **Squadrons split up and rejoin**: Vipers spread out over different enemies, show as separate icons while they fight, then fly back and rejoin one squadron when the area is clear.
+- **FTL OFFLINE during a breach**: once a Heavy Raider gets through and starts draining the hull, FTL goes offline and cannot be used, manually or by AUTO FTL. When the hack ends (EMP, or the Heavy Raider is destroyed or leaves), the FTL charge restarts from 0% and must reach 100% again.
+- **One Viper attacks the Resurrection Ship**: while one is on the scope, one Viper breaks off from the squadron to attack it, so it can now be destroyed.
+- **High-score battle stats**: hover over (or tap) an entry on the Game Over board to see how many of each enemy type that battle destroyed.
+- **BEST score in play**: the best score shows in small text beside SCORE.
+- **Settings links**: the version text now opens the project's GitHub page; a small round **!** beside it opens the app data folder with the session logs.
 
 ## Import on Mac
 
-1. Extract `DRADIS_Battle_Console_1.07_2026-10-05.zip` into a new location. Keep the existing working project as a backup.
+1. Extract `DRADIS_Battle_Console_1.08_2026-10-06.zip` into a new location. Keep the existing working project as a backup.
 2. In Godot 4.7 Project Manager, choose **Import**.
-3. Select `project.godot` inside `DRADIS_Battle_Console_1.07`. The project now appears as **DRADIS Battle Console**.
+3. Select `project.godot` inside `DRADIS_Battle_Console_1.08`. The project now appears as **DRADIS Battle Console**.
 4. Open the project, let importing finish, and press F5 or click Run Project.
 5. The tuning panel starts hidden. Press F1 to show/hide it; some Mac keyboards require Fn-F1.
 
@@ -31,15 +31,15 @@ Export templates for Godot 4.7 must be installed once (**Editor > Manage Export 
 ### Windows
 
 1. Open **Project > Export** and select the **Windows Desktop** preset: x86_64, one single .exe with the game inside, no extra console window, and DRADIS Battle Console in the file details.
-2. Click **Export Project**, keep the name `DRADIS_Battle_Console_1.07_Windows_x64.exe`, untick **Export With Debug**, and click **Save**.
+2. Click **Export Project**, keep the name `DRADIS_Battle_Console_1.08_Windows_x64.exe`, untick **Export With Debug**, and click **Save**.
 3. For a Windows on ARM laptop, change **Architecture** to arm64 in the same preset, export with a name ending `_Windows_arm64.exe`, and set it back to x86_64 afterwards.
 4. Windows may show "Windows protected your PC" the first time because the .exe is not code-signed. Click **More info**, then **Run anyway**.
 
 ### Mac (DMG)
 
-1. Open **Project > Export** and select the **macOS** preset: Universal (Apple Silicon and Intel), bundle identifier `com.dradisbattleconsole.game`, version 1.07, built-in ad-hoc signing and no notarization.
+1. Open **Project > Export** and select the **macOS** preset: Universal (Apple Silicon and Intel), bundle identifier `com.dradisbattleconsole.game`, version 1.08, built-in ad-hoc signing and no notarization.
 2. The two yellow warnings from the earlier build are handled: ETC2 ASTC texture import is switched on in Project Settings (required for a Universal Mac build), and code signing is set to ad-hoc. A remaining warning about notarization is expected; notarization requires a paid Apple Developer account and is not needed for personal testing.
-3. Click **Export Project**, keep the name `DRADIS_Battle_Console_1.07_Mac.dmg`, untick **Export With Debug**, and click **Save**.
+3. Click **Export Project**, keep the name `DRADIS_Battle_Console_1.08_Mac.dmg`, untick **Export With Debug**, and click **Save**.
 4. Open the DMG and drag the app to Applications. The first time, macOS may say it cannot check the app for malicious software. Close that message, open **System Settings > Privacy & Security**, scroll down, and click **Open Anyway** next to DRADIS Battle Console. After that it opens normally.
 
 Notes:
@@ -62,7 +62,8 @@ The gear icon at the top right, just left of SCORE, opens **SETTINGS**. Mouse, t
 - **AUTO RAPID REPAIR**: when ON, a repair charge is used by itself as soon as the hull is at 50% or less, if a charge is available and no repair is running. It follows the normal repair rules (+25% over 5 seconds per charge). The RAPID REPAIR button shows AUTO and still works by hand. With AUTO FTL JUMP also on, the repair normally happens long before the hull falls below 10%.
 - **REMEMBER SETTINGS**: ON (the default) keeps every choice for the next start, as before. OFF makes the next start return to NORMAL with every auto option off; volumes, mutes and this switch itself are kept either way.
 - **DEFAULTS** (beside REMEMBER SETTINGS; called RESET TO DEFAULTS before 1.05) puts every setting back to its default straight away: volumes 50% and 100%, nothing muted, NORMAL, all auto options off. It asks once more (**CONFIRM**); press again within 3 seconds. The REMEMBER SETTINGS choice and the high scores are not affected.
-- The small dim text centered at the bottom shows the build, for example **DRADIS BATTLE CONSOLE 1.07**. It is also a link: click it to open the folder with the session logs in Finder or Explorer (see Diagnostic log). It underlines and brightens while the mouse is over it.
+- The small dim text centered at the bottom shows the build, for example **DRADIS BATTLE CONSOLE 1.08**. From 1.08 it is a link to the project's GitHub page (https://github.com/S8619G/DRADIS-Battle-Console), which opens in the web browser. The address is **DradisConsole > Diagnostic Log > Github Url** in the Inspector.
+- Just right of it, a small round **!** opens the game's app data folder in Finder or Explorer. The session logs are in its **logs** folder (see Diagnostic log); the settings and high-score files are there too. It underlines and brightens while the mouse is over it.
 - The number in the build text comes from **Project Settings > Application > Config > Version**, so it updates with each build. **DradisConsole > Build > Test Build** (off from 1.06) adds "TEST" for a trial copy.
 - **QUIT** (bottom left) closes the game. It asks once more (**CONFIRM QUIT**); press again within 3 seconds to quit. Settings are saved first.
 - **AUTO FIREWALL**: when ON, the Firewall rises by itself as soon as a Heavy Raider starts hacking, and lowers itself when the hack ends, but not before it has been up for half a second. The button shows AUTO.
@@ -91,7 +92,7 @@ From 1.05 the game writes a small session log of its own, to help explain a free
 - Mac: `~/Library/Application Support/Godot/app_userdata/DRADIS Battle Console/logs/`
 - Windows: `%APPDATA%\Godot\app_userdata\DRADIS Battle Console\logs\`
 
-Clicking the version text at the bottom of **Settings** opens this folder directly (1.05 had an OPEN LOG FOLDER button instead). Godot's own `godot.log` files are in the same folder; the game now keeps the last 10 of those as well (was 5).
+Clicking the small round **!** beside the version text at the bottom of **Settings** opens the app data folder that contains this **logs** folder (1.05 had an OPEN LOG FOLDER button; 1.06 and 1.07 used the version text). FTL going offline and back online is written to the log as an EVENT. Godot's own `godot.log` files are in the same folder; the game now keeps the last 10 of those as well (was 5).
 
 What it records:
 
@@ -298,7 +299,7 @@ From wave 2, a Resurrection Ship may arrive. Only one can be on the scope at a t
 - It appears already identified, is drawn larger than a Basestar and is labeled **RESURRECTION** with its remaining strength. On arrival a deeper version of the approved alert plays twice. The sidebar shows **RESURRECTION SHIP**, its strength and **NEXT BARRAGE** countdown.
 - It fires a barrage while it crosses: **3 missiles, one per second** (timed, not all at once), the first 3 seconds after arrival. A new barrage starts every 8 seconds, shortened by the wave just like Basestar launches, so it always fires faster than a Basestar.
 - Barrage missiles fan out left, center and right instead of flying in a line, then close in on the ship. Each does **5 hull damage** (a Basestar missile does 10). The Defense Battery can shoot them down.
-- It needs 10 ship-missile hits (a Basestar needs 6). Ship missiles alternate between it and the Basestars, or all go to it when no Basestar is left. Raptors prefer it over Basestars; each Raptor missile does half a hit. Vipers attack it once Raiders and missiles in their zone are dealt with. A focused attack can destroy it before it escapes; the Defense Battery cannot damage it. Destroying it earns 2,500 points.
+- It needs 10 ship-missile hits (a Basestar needs 6). Ship missiles alternate between it and the Basestars, or all go to it when no Basestar is left. Raptors prefer it over Basestars; each Raptor missile does half a hit. From 1.08 **one Viper** breaks off from the squadron to attack it as soon as it is on the scope, while the others keep defending; if that Viper is lost or returns, another takes its place. In testing (Normal, wave 3, auto options on) it was destroyed in about 8 of 10 crossings, usually 40 to 60 seconds into its roughly 66-second crossing (in 1.07 it was never destroyed). **Contacts > Viper Squadrons > Vipers On Resurrection Ship** sets how many (0 = the 1.07 behavior: only once Raiders and missiles are dealt with). A focused attack can destroy it before it escapes; the Defense Battery cannot damage it. Destroying it earns 2,500 points.
 - It appears more often as the waves get tougher. Every 20 seconds there is a chance one arrives: 25% in wave 2, rising 5% per wave up to 60%. After one is destroyed, escapes or is left behind by FTL there is a quiet period: 90 seconds in wave 2, 10 seconds shorter each wave, never less than 40 seconds.
 
 ## High scores
@@ -307,6 +308,10 @@ When the game ends with a score in the top 10, Game Over shows **NEW HIGH SCORE 
 
 - **Mouse:** click the arrow above or below a letter to change it, then click **ENTER**.
 - **Keyboard:** type letters (they become upper case), use Up/Down to change the current letter, Left/Right or Backspace to move, and Enter to save.
+
+**Battle stats (1.08):** each new entry also saves how many of each enemy type the battle destroyed. Hover the mouse over an entry on the board (or tap it on a touch screen) to show a small box with its initials, score, wave and difficulty, the total, and the count of Raiders, Heavy Raiders, missiles, nukes, Basestars and Resurrection Ships. Moving away hides it; a tapped entry stays open until it is tapped again. Entries saved before 1.08 show NO BATTLE STATS. **DradisConsole > High Scores > Show Score Stats** switches it off.
+
+**BEST score (1.08):** during play the best saved score shows in small dim text on the SCORE line, just left of SCORE (there is no room above it inside the header frame). It follows the current score once that is higher. **DradisConsole > High Scores > Show Best Score / Best Score Font Size / Best Score Color**.
 
 The board then shows the top 10 scores with initials, score, the wave reached and the difficulty letter (for example **W3 H**: wave 3 on HARD; E = Easy, N = Normal); the new entry flashes. Equal scores keep the earlier one higher. The next entry starts with the last initials used. If Retry is clicked before ENTER, the score is still saved under the initials shown, so it is never lost. A score that does not make the top 10 shows the board with SCORE DID NOT REACH THE TOP 10.
 
@@ -329,6 +334,7 @@ Heavy Raiders ignore every other ship and fly straight to a parking spot just ab
 1. **Approach:** The Heavy Raider flies toward the ship. The sidebar warns HEAVY RAIDER APPROACHING / BATTERY CANNOT STOP IT.
 2. **Hacking:** Once within range of the hull, it hacks for six seconds. No damage occurs yet.
 3. **Hull drain:** After a successful hack, it drains 2 percent of maximum hull per second until destroyed. Two hackers drain 4 percent per second. A persistent red COMPUTERS HACKED warning appears.
+4. **FTL offline (1.08):** As soon as any Heavy Raider has broken through, FTL goes **OFFLINE**: the ship outline shows OFFLINE in red instead of the FTL percent, the FTL JUMP button reads OFFLINE, and neither a manual jump nor AUTO FTL is possible. FTL comes back online once no Heavy Raider is draining (EMP, destroyed, or out of range); its charge then restarts from 0% and FTL can be used again only at 100% (45 seconds). The Firewall slows the hack, which keeps FTL available longer; the EMP or destroying the Heavy Raider ends the breach.
 
 The Defense Battery cannot damage Heavy Raiders. They can be destroyed by:
 
@@ -338,7 +344,7 @@ The Defense Battery cannot damage Heavy Raiders. They can be destroyed by:
 
 Destroying a Heavy Raider earns 300 points and stops its drain immediately.
 
-A Heavy Raider already in flight survives the destruction of its Basestar. FTL removes all Heavy Raiders and hacking links; Retry clears them as well. The six-second hack and 2 percent drain are adjustable starting values, not final balance.
+A Heavy Raider already in flight survives the destruction of its Basestar. FTL (when it is not offline) removes all Heavy Raiders and hacking links; Retry clears them as well. Inspector (**Contacts > FTL**): Ftl Offline On Breach (on; off = the 1.07 behavior), Ftl Breach Recharge Seconds (45: how long the rebuild from 0% takes after a breach). The OFFLINE color and size are **ShipStatus > Ftl Offline Color / Font Size**. The six-second hack and 2 percent drain are adjustable starting values, not final balance.
 
 ## Score and rapid repair
 
@@ -470,6 +476,8 @@ Stop the game, select **DradisConsole > CenterContainer > Dome > Contacts**, edi
 | Viper Squadrons | Viper Squadrons Enabled | On |
 | Viper Squadrons | Squadron Join / Split Distance | 0.075 / 0.06 |
 | Viper Squadrons | Squadrons Split To Engage / Max Vipers Per Tough Target | On / 2 |
+| Viper Squadrons | Vipers On Resurrection Ship | 1 |
+| FTL | Ftl Offline On Breach / Ftl Breach Recharge Seconds | On / 45 |
 | Viper Squadrons | Squadron Spread Penalty / Formation Spacing | 3 / 0.02 |
 | Missile Visibility | Enemy Missile Pulse / Hz / Min | On / 2 / 0.35 |
 | EMP Defense | Emp Delay After Firewall | 2.0 |
@@ -616,16 +624,18 @@ Stop the game, select **DradisConsole > CenterContainer > Dome > Contacts**, edi
 
 ## Suggested test
 
-1. Extract this build to a new folder, import it in Godot 4.7 and run it once. Settings should show DRADIS BATTLE CONSOLE 1.07 at the bottom.
-2. Play until the scope is busy. Enemy missiles should pulse bright and dim, twice a second, and never disappear. Missiles should have no tag; Raiders, Vipers and Raptors should read RAIDER, VIPER, RAPTOR; groups should read VIPERS x2 or x3.
-3. Launch Vipers when several Raiders come in. The Vipers should break up to chase different Raiders, then fly back together and show as one VIPERS group when the area is clear.
-4. Let the ship fire missiles at a Basestar and destroy the Basestar with other weapons before they arrive. The missiles should turn to the next enemy instead of vanishing.
-5. Earn 5,000 points (EMP CHARGES 1). When a Heavy Raider hacks, INTRUSION DETECTION should stay on the ship. Raise the FIREWALL and let it run out. About 2 seconds later the FIREWALL button should split into FIREWALL | EMP. Click EMP: a zap should play and the Heavy Raider should shimmer blue and fly home; the button becomes a whole FIREWALL again.
-6. Export the Mac DMG and Windows builds as before and check that they run. On the Windows arm64 PC, play a long session and keep the session log if the screen freezes.
+1. Extract this build to a new folder, import it in Godot 4.7 and run it once. Open Settings: DRADIS BATTLE CONSOLE 1.08 should be at the bottom with a small round ! beside it. Click the version text: the GitHub page should open in the browser. Click the !: the app data folder (with the logs folder) should open in Finder or Explorer.
+2. Let a Heavy Raider break through (do not raise the Firewall). FTL on the ship should read OFFLINE in red and FTL JUMP should read OFFLINE. Use the EMP or destroy the Heavy Raider: FTL should come back at about 1% and count up to 100% before it can be used.
+3. Wait for a Resurrection Ship (from wave 2). One Viper should leave the group and attack it while the others keep fighting Raiders.
+4. Lose a battle with a top-10 score and enter initials. Hover over (or tap) your entry: a box should list the enemies destroyed. Older entries should say NO BATTLE STATS. During the next battle, BEST and the top score should show beside SCORE.
+5. Play a long session with every auto option on. With FTL going offline during a breach, the battle can now end (see Known limits).
+6. Export the Mac DMG and the Windows x64 and arm64 builds as before and check that they run.
 
 ## Known limits
 
 The source project is a complete full build of the editable project, not a signed Mac application. Automated engine and rendered-layout tests run on Godot 4.4.1 Linux; Godot 4.7/macOS speaker output, display scaling, touch use of the Settings panel, how Easy and Hard feel, and how loud the new booms are, how strong the screen flash feels, how the slower battery, auto launch and auto FTL play, the startup window size on real Mac and Windows high-resolution screens, how loud the new fighter and capital-ship booms feel, and how the faster missiles and nukes and the battery at the arc play still need field testing. The Windows arm64 freeze reported on 2026-10-04 and 2026-10-05 is not fixed by this build; the new session log is there to show which kind of freeze it is. The renderer is unchanged, and starting the Windows game with `--rendering-driver opengl3_angle` added to its shortcut remains the suggested test. How the repair tone, the EMP zap and the bonus chime sound, how often an EMP is available in real play, whether the missile pulse is comfortable, how the split and rejoining Vipers play, whether the halves of the split FIREWALL | EMP button are easy to tap, how often the Double Missile bonus is reached in real play, and Hard nuke speed (still 1.6x, under review after real play) also need field testing. The difficulty and auto values are starting points for play-testing and can be changed in the Inspector.
+
+**All-auto play and FTL offline (1.08):** in 1.07 a battle with every auto option on could run without end on Normal, mostly because AUTO FTL escaped each low-hull moment. In 1.08 the hull usually falls that low during a Heavy Raider breach, when FTL is now offline, so AUTO FTL cannot save the ship. In computer runs with every auto option on (no manual EMP): Easy still lasted the full 60 minutes; Normal ended after about 8 to 10 minutes (wave 6); Hard after about 2 to 3 minutes. A player who uses the EMP or Vipers against Heavy Raiders lasts much longer; how this feels in real play still needs testing. A shorter rebuild time after a breach does not change all-auto results, because the losses happen while FTL is offline. Switching **Contacts > FTL > Ftl Offline On Breach** off restores the 1.07 behavior.
 
 To adjust only the background DRADIS loudness, select the top-level DradisConsole node and change **Audio Mix > Sweep Volume Db**, now -20 dB. Foreground alerts retain their separate volume controls.
 

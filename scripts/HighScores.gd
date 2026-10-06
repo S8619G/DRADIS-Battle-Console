@@ -5,6 +5,18 @@ extends RefCounted
 ## replace the old table; an unreadable table is backed up, never discarded.
 
 const LETTERS := "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+## 1.08: enemy kinds kept in each entry's battle stats (entries saved before 1.08 have none).
+const STAT_KINDS := ["raider", "heavy_raider", "missile", "nuke", "baseship", "resurrection_ship"]
+
+## 1.08: whole, non-negative counts for the known kinds; {} when there are none.
+static func clean_stats(raw: Variant) -> Dictionary:
+	var stats := {}
+	if typeof(raw) != TYPE_DICTIONARY:
+		return stats
+	for kind in STAT_KINDS:
+		if raw.has(kind):
+			stats[kind] = maxi(0, int(raw[kind]))
+	return stats
 
 static func clean_initials(text: String) -> String:
 	var result := ""
@@ -24,12 +36,16 @@ static func _clean_entries(raw: Variant, slots: int) -> Array:
 	for item in raw:
 		if typeof(item) != TYPE_DICTIONARY or not item.has("score"):
 			continue
-		entries.append({
+		var entry := {
 			"initials": clean_initials(str(item.get("initials", "AAA"))),
 			"score": maxi(0, int(item.get("score", 0))),
 			"wave": maxi(1, int(item.get("wave", 1))),
 			"difficulty": str(item.get("difficulty", "N")) if str(item.get("difficulty", "N")) in ["E", "N", "H"] else "N"
-		})
+		}
+		var stats := clean_stats(item.get("stats", null))
+		if not stats.is_empty():
+			entry["stats"] = stats
+		entries.append(entry)
 	# Highest first; equal scores keep their saved order.
 	var ordered: Array = []
 	for entry in entries:
@@ -64,13 +80,17 @@ static func qualifies(scores: Array, score: int, slots: int = 10) -> bool:
 	return score > int(scores[slots - 1].score)
 
 ## Inserts below any equal scores. Returns the 0-based row, or -1 if it did not place.
-static func insert(scores: Array, initials: String, score: int, wave: int, slots: int = 10, difficulty: String = "N") -> int:
+static func insert(scores: Array, initials: String, score: int, wave: int, slots: int = 10, difficulty: String = "N", stats: Dictionary = {}) -> int:
 	if not qualifies(scores, score, slots):
 		return -1
 	var index := scores.size()
 	while index > 0 and int(scores[index - 1].score) < score:
 		index -= 1
-	scores.insert(index, {"initials": clean_initials(initials), "score": score, "wave": maxi(1, wave), "difficulty": difficulty if difficulty in ["E", "N", "H"] else "N"})
+	var entry := {"initials": clean_initials(initials), "score": score, "wave": maxi(1, wave), "difficulty": difficulty if difficulty in ["E", "N", "H"] else "N"}
+	var clean := clean_stats(stats)
+	if not clean.is_empty():
+		entry["stats"] = clean
+	scores.insert(index, entry)
 	while scores.size() > slots:
 		scores.pop_back()
 	return index if index < slots else -1
@@ -96,6 +116,13 @@ static func save_board(path: String, scores: Array, last_initials: String) -> bo
 		return false
 	return true
 
+
+## 1.08: the highest saved score (0 when the table is empty).
+static func best_score(scores: Array) -> int:
+	var best := 0
+	for entry in scores:
+		best = maxi(best, int(entry.get("score", 0)))
+	return best
 
 static func _parse(text: String) -> Variant:
 	# Quiet parse: a damaged file returns null instead of printing an engine error.

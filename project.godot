@@ -16,7 +16,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 config/name="DRADIS Battle Console"
 config/description="DRADIS Battle Console tactical defense game (Windows/Mac)"
-config/version="1.07"
+config/version="1.08"
 run/main_scene="res://scenes/DradisConsole.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"

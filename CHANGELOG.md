@@ -2,6 +2,23 @@
 
 Functional changes in each version, newest first. Earlier development-stage notes are in `docs/history/`.
 
+## 1.08 (2026-10-06)
+
+Builds on DRADIS Battle Console 1.07.
+
+### Added
+
+- FTL goes offline while any Heavy Raider has broken through and is draining the hull. The ship outline shows OFFLINE in red, the FTL JUMP button reads OFFLINE, and neither a manual jump nor AUTO FTL is possible. When the breach ends (EMP, destroyed, out of range) the FTL charge restarts from 0% and must reach 100% again. Inspector: Contacts > FTL > Ftl Offline On Breach (on), Ftl Breach Recharge Seconds (45); ShipStatus > Ftl Offline Color / Font Size. FTL offline and back online are logged as events.
+- One Viper breaks off to attack a Resurrection Ship while it is on the scope; another takes over if it is lost or returns. Inspector: Contacts > Viper Squadrons > Vipers On Resurrection Ship (1; 0 = previous behavior).
+- High-score entries save how many of each enemy type the battle destroyed. Hovering over (or tapping) an entry on the Game Over board shows them in a small box; entries saved earlier show NO BATTLE STATS. Inspector: DradisConsole > High Scores > Show Score Stats.
+- The best saved score shows in small dim text on the SCORE line, just left of SCORE, during play. Inspector: Show Best Score, Best Score Font Size (15), Best Score Color.
+- A small round ! beside the Settings version text opens the app data folder (session logs, settings and high scores).
+
+### Changed
+
+- The Settings version text opens the project's GitHub page instead of the log folder. Inspector: DradisConsole > Diagnostic Log > Github Url.
+- Version 1.08 in the project and both export presets.
+
 ## 1.07 (2026-10-05)
 
 Builds on DRADIS Battle Console 1.06.

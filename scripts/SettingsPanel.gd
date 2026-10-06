@@ -1,7 +1,8 @@
 extends Control
 ## Gear-icon Settings panel: Effects and DRADIS volume with mute switches,
 ## difficulty, auto options, Remember Settings, Defaults and QUIT. The version text at the
-## bottom is a link that opens the session log folder (1.06). Built in code so it
+## bottom is a link to the project's GitHub page (1.08); the small round "!" beside it
+## opens the app data folder with the session logs (1.08). Built in code so it
 ## needs no extra scene file. The console pauses the battle while it is open.
 
 signal changed(settings: Dictionary)
@@ -10,6 +11,7 @@ signal new_battle_requested
 signal effects_preview
 signal quit_requested
 signal open_logs_requested
+signal open_github_requested
 
 const GameSettings = preload("res://scripts/GameSettings.gd")
 const EDGE := Color("#77324f")
@@ -48,13 +50,15 @@ var quit_button: Button
 ## Hover help text on buttons (the console's Show Hover Tooltips switch; off from 1.06).
 var show_tooltips: bool = false
 ## Small dim build text centered at the bottom, for example "DRADIS BATTLE CONSOLE 1.06"
-## (set by the console from the project version). Clicking it opens the log folder.
+## (set by the console from the project version). Clicking it opens the GitHub page (1.08).
 var version_text: String = "":
 	set(value):
 		version_text = value
 		if version_label:
 			version_label.text = value
 var version_label: LinkButton
+## 1.08: small round "!" just right of the version text; opens the app data folder.
+var log_icon_button: Button
 var quit_armed: bool = false
 var quit_armed_serial: int = 0
 var multiplier_label: Label
@@ -127,7 +131,7 @@ func _ready() -> void:
 	_tip(quit_button, "Close DRADIS Battle Console (press twice to confirm)")
 	new_battle_button = _button("NEW BATTLE", Vector2(400, 828), Vector2(220, 56), false)
 	close_button = _button("CLOSE", Vector2(656, 828), Vector2(160, 56), false)
-	# Version text, centered at the bottom; a quiet link to the session log folder.
+	# Version text, centered at the bottom; a quiet link to the GitHub page (1.08).
 	var version_row := HBoxContainer.new()
 	version_row.name = "VersionRow"
 	version_row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -144,8 +148,11 @@ func _ready() -> void:
 	version_label.add_theme_color_override("font_color", Color(MUTED, 0.6))
 	version_label.add_theme_color_override("font_hover_color", Color(TEXT, 0.9))
 	version_label.add_theme_color_override("font_pressed_color", ACCENT)
-	_tip(version_label, "Open the folder with this game's session logs")
+	_tip(version_label, "Open the DRADIS Battle Console page on GitHub")
 	version_row.add_child(version_label)
+	log_icon_button = _log_icon()
+	_tip(log_icon_button, "Open the app data folder (session logs)")
+	version_row.add_child(log_icon_button)
 	effects_slider.value_changed.connect(_on_volume.bind("effects_volume"))
 	dradis_slider.value_changed.connect(_on_volume.bind("dradis_volume"))
 	effects_slider.drag_ended.connect(func(_changed: bool) -> void: effects_preview.emit())
@@ -160,7 +167,8 @@ func _ready() -> void:
 	remember_button.toggled.connect(_on_toggle.bind("remember_settings"))
 	reset_button.pressed.connect(_on_reset_pressed)
 	quit_button.pressed.connect(_on_quit_pressed)
-	version_label.pressed.connect(func() -> void: open_logs_requested.emit())
+	version_label.pressed.connect(func() -> void: open_github_requested.emit())
+	log_icon_button.pressed.connect(func() -> void: open_logs_requested.emit())
 	new_battle_button.pressed.connect(func() -> void: new_battle_requested.emit())
 	close_button.pressed.connect(func() -> void: close_requested.emit())
 	resized.connect(_center_panel)
@@ -303,6 +311,34 @@ func _button(text: String, at: Vector2, box: Vector2, toggle: bool) -> Button:
 	button.toggle_mode = toggle
 	button.focus_mode = Control.FOCUS_ALL
 	panel.add_child(button)
+	return button
+
+## 1.08: the small circular "!" icon (same quiet colors as the version text).
+func _log_icon() -> Button:
+	var button := Button.new()
+	button.name = "LogFolderIcon"
+	button.text = "!"
+	button.focus_mode = Control.FOCUS_NONE
+	button.custom_minimum_size = Vector2(22, 22)
+	button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	button.add_theme_font_size_override("font_size", 14)
+	button.add_theme_color_override("font_color", Color(MUTED, 0.6))
+	button.add_theme_color_override("font_hover_color", Color(TEXT, 0.9))
+	button.add_theme_color_override("font_pressed_color", ACCENT)
+	for state in ["normal", "hover", "pressed", "focus"]:
+		var ring := StyleBoxFlat.new()
+		ring.bg_color = Color(0, 0, 0, 0) if state != "pressed" else Color(ACCENT, 0.15)
+		ring.border_color = Color(MUTED, 0.6) if state == "normal" else (Color(TEXT, 0.9) if state == "hover" else ACCENT)
+		if state == "focus":
+			ring.draw_center = false
+			ring.border_color = Color(0, 0, 0, 0)
+		ring.set_border_width_all(1)
+		ring.set_corner_radius_all(11)
+		ring.content_margin_left = 0
+		ring.content_margin_right = 0
+		ring.content_margin_top = 0
+		ring.content_margin_bottom = 0
+		button.add_theme_stylebox_override(state, ring)
 	return button
 
 func _slider(at: Vector2) -> HSlider:

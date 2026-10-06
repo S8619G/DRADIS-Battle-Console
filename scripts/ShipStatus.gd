@@ -36,6 +36,9 @@ const REGION := Rect2(88, 169, 1522, 597)
 @export var flak_sparkle := Color(1.0, 0.97, 0.66)
 ## Horizontal centers (fraction of the outline width) of the FTL and HULL readouts.
 @export_range(0.05, 0.45) var ftl_center: float = 0.18
+## 1.08: the FTL readout while a Heavy Raider breach holds FTL offline.
+@export var ftl_offline_color := Color("#ff6b6b")
+@export_range(10, 30) var ftl_offline_font_size: int = 18
 @export_range(0.55, 0.95) var hull_center: float = 0.855
 @export_group("Intrusion Detection")
 @export var intrusion_box_size := Vector2(150, 64)
@@ -110,8 +113,12 @@ func _draw() -> void:
 	var right := rect.position + dimensions * Vector2(hull_center, 0.5)
 	var text_color := Color("#e6f7ee")
 	_text("FTL", left + Vector2(0, -6), 16, text_color)
-	_text("%d%%" % battle.ftl_percent(), left + Vector2(0, 22), 26,
-		Color("#99f7dd") if battle.can_jump() else Color("#ffe1a6"))
+	if battle.ftl_offline:
+		# 1.08: a Heavy Raider breach has taken FTL offline.
+		_text("OFFLINE", left + Vector2(0, 20), ftl_offline_font_size, ftl_offline_color)
+	else:
+		_text("%d%%" % battle.ftl_percent(), left + Vector2(0, 22), 26,
+			Color("#99f7dd") if battle.can_jump() else Color("#ffe1a6"))
 	_text("HULL", right + Vector2(0, -6), 16, text_color)
 	_text("%d%%" % battle.hull_percent(), right + Vector2(0, 22), 26, text_color)
 	var middle := rect.position + dimensions * Vector2(0.49, 0.5)
