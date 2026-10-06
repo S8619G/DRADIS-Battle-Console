@@ -16,7 +16,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 config/name="DRADIS Battle Console"
 config/description="DRADIS Battle Console tactical defense game (Windows/Mac)"
-config/version="1.08"
+config/version="1.09"
 run/main_scene="res://scenes/DradisConsole.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
@@ -37,5 +37,174 @@ window/stretch/mode="canvas_items"
 
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
+gl_compatibility/force_angle_on_devices=[{
+"name": "Radeon 9",
+"vendor": "ATI"
+}, {
+"name": "Radeon X",
+"vendor": "ATI"
+}, {
+"name": "Radeon HD 2",
+"vendor": "ATI"
+}, {
+"name": "Radeon HD 3",
+"vendor": "ATI"
+}, {
+"name": "Radeon HD 4",
+"vendor": "ATI"
+}, {
+"name": "Radeon HD 5",
+"vendor": "ATI"
+}, {
+"name": "Radeon HD 6",
+"vendor": "ATI"
+}, {
+"name": "Radeon HD 7",
+"vendor": "ATI"
+}, {
+"name": "Radeon HD 8",
+"vendor": "ATI"
+}, {
+"name": "Radeon(TM) R2 Graphics",
+"vendor": "ATI"
+}, {
+"name": "Radeon(TM) R3 Graphics",
+"vendor": "ATI"
+}, {
+"name": "Radeon(TM) R4 Graphics",
+"vendor": "ATI"
+}, {
+"name": "Radeon(TM) R5 Graphics",
+"vendor": "ATI"
+}, {
+"name": "Radeon(TM) R6 Graphics",
+"vendor": "ATI"
+}, {
+"name": "Radeon(TM) R7 Graphics",
+"vendor": "ATI"
+}, {
+"name": "Radeon(TM) R7 Graphics",
+"vendor": "AMD"
+}, {
+"name": "Radeon(TM) R8 Graphics",
+"vendor": "AMD"
+}, {
+"name": "Radeon R5 Graphics",
+"vendor": "ATI"
+}, {
+"name": "Radeon R6 Graphics",
+"vendor": "ATI"
+}, {
+"name": "Radeon R7 Graphics",
+"vendor": "ATI"
+}, {
+"name": "Radeon R7 Graphics",
+"vendor": "AMD"
+}, {
+"name": "Radeon R8 Graphics",
+"vendor": "AMD"
+}, {
+"name": "Radeon R5 2",
+"vendor": "ATI"
+}, {
+"name": "Radeon R7 2",
+"vendor": "ATI"
+}, {
+"name": "Radeon R9 2",
+"vendor": "ATI"
+}, {
+"name": "Radeon R5 M2",
+"vendor": "ATI"
+}, {
+"name": "Radeon R7 M2",
+"vendor": "ATI"
+}, {
+"name": "Radeon R9 M2",
+"vendor": "ATI"
+}, {
+"name": "Radeon (TM) R9 Fury",
+"vendor": "ATI"
+}, {
+"name": "Radeon (TM) R5 3",
+"vendor": "ATI"
+}, {
+"name": "Radeon (TM) R5 3",
+"vendor": "AMD"
+}, {
+"name": "Radeon (TM) R7 3",
+"vendor": "ATI"
+}, {
+"name": "Radeon (TM) R7 3",
+"vendor": "AMD"
+}, {
+"name": "Radeon (TM) R9 3",
+"vendor": "ATI"
+}, {
+"name": "Radeon (TM) R9 3",
+"vendor": "AMD"
+}, {
+"name": "Radeon (TM) R5 M3",
+"vendor": "ATI"
+}, {
+"name": "Radeon (TM) R5 M3",
+"vendor": "AMD"
+}, {
+"name": "Radeon (TM) R7 M3",
+"vendor": "ATI"
+}, {
+"name": "Radeon (TM) R7 M3",
+"vendor": "AMD"
+}, {
+"name": "Radeon (TM) R9 M3",
+"vendor": "ATI"
+}, {
+"name": "Radeon (TM) R9 M3",
+"vendor": "AMD"
+}, {
+"name": "Intel(R) HD Graphics",
+"vendor": "Intel"
+}, {
+"name": "Intel HD Graphics",
+"vendor": "Intel"
+}, {
+"name": "Intel(R) Vallyview Graphics",
+"vendor": "Intel"
+}, {
+"name": "Intel(R) Iris(TM) Graphics 5100",
+"vendor": "Intel"
+}, {
+"name": "Intel(R) Iris(TM) Pro Graphics 5200",
+"vendor": "Intel"
+}, {
+"name": "Intel(R) Iris(TM) Graphics 6100",
+"vendor": "Intel"
+}, {
+"name": "Intel(R) Iris(TM) Pro Graphics 6200",
+"vendor": "Intel"
+}, {
+"name": "Intel(R) Iris(TM) Pro Graphics P6300",
+"vendor": "Intel"
+}, {
+"name": "Intel(R) Iris Graphics 540",
+"vendor": "Intel"
+}, {
+"name": "Intel(R) Iris Plus Graphics 640",
+"vendor": "Intel"
+}, {
+"name": "Intel(R) Iris Plus Graphics 650",
+"vendor": "Intel"
+}, {
+"name": "Intel(R) Iris Pro Graphics 580",
+"vendor": "Intel"
+}, {
+"name": "Intel(R) Iris Pro Graphics P580",
+"vendor": "Intel"
+}, {
+"name": "Qualcomm",
+"vendor": "Microsoft"
+}, {
+"name": "*",
+"vendor": "Qualcomm"
+}]
 textures/vram_compression/import_etc2_astc=true
 environment/defaults/default_clear_color=Color(0, 0, 0, 1)

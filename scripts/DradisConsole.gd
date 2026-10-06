@@ -239,7 +239,15 @@ func _start_session_log() -> void:
 	session_log.write_start(version_text(), settings, GameSettings.DIFFICULTY_NAMES[settings.difficulty], contacts.auto_options_on())
 	contacts.wave_changed.connect(func(number: int) -> void: log_event("wave %d" % number))
 	contacts.ftl_offline_changed.connect(func(offline: bool) -> void: log_event("FTL %s | hull %d%%" % ["offline (hack breach)" if offline else "back online", roundi(contacts.hull)]))
+	contacts.stealth_event.connect(func(message: String) -> void: log_event(message))
 	contacts.ftl_jumped.connect(func() -> void: log_event("FTL jump | hull %d%% | auto %s" % [roundi(contacts.hull), "yes" if contacts.auto_ftl else "no"]))
+
+## 1.09: window focus changes go to the session log (for freeze reports).
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		log_event("window lost focus")
+	elif what == NOTIFICATION_APPLICATION_FOCUS_IN:
+		log_event("window focused")
 
 ## Writes one EVENT line to the session log (no-op when logging is off).
 func log_event(text: String) -> void:
@@ -899,7 +907,8 @@ func _refresh_high_score_panel() -> void:
 		row[0].text = "%d." % (index + 1)
 		row[1].text = entry.initials if has_entry else "---"
 		row[2].text = str(entry.score) if has_entry else ""
-		row[3].text = ("W%d %s" % [entry.wave, entry.get("difficulty", "N")]) if has_entry else ""
+		# 1.09: difficulty in full; the wave and stats are in the hover box.
+		row[3].text = {"E": "EASY", "N": "NORMAL", "H": "HARD"}.get(entry.get("difficulty", "N"), "NORMAL") if has_entry else ""
 		var color := Color(0.93, 0.88, 0.91) if has_entry else Color(0.45, 0.40, 0.44)
 		if index == highlight_row:
 			color = Color(1.0, 0.89, 0.55) if blink else Color(1.0, 0.6, 0.78)

@@ -15,6 +15,8 @@ signal basestar_destroyed(contact_id: String)
 signal wave_changed(wave_number: int)
 signal resurrection_arrived(contact_id: String)
 signal resurrection_destroyed(contact_id: String)
+## 1.09: Stealth Viper events for the session log (ready, launched, fired, lost, recovered).
+signal stealth_event(message: String)
 
 ## 1.07: kinds a ship or Raptor missile may attack (also when it changes target).
 const MISSILE_TARGET_KINDS := ["baseship", "heavy_raider", "resurrection_ship", "nuke"]
@@ -478,6 +480,32 @@ const SMALL_HOSTILE_KINDS := ["raider"]
 @export var arrival_sound_enabled: bool = true
 @export_range(-40.0, 0.0) var arrival_volume_db: float = -8.0
 
+@export_group("Stealth Viper")
+## 1.09: a special Viper with two nuclear missiles, launched by the STEALTH WEAPON
+## button on the top nacelle. Never offered on Easy.
+@export var stealth_viper_enabled: bool = true
+## Large ships (Basestars plus the Resurrection Ship) needed on screen to offer it.
+@export_range(1, 6) var stealth_min_large_ships: int = 3
+## Flight speed compared with a normal Viper.
+@export_range(1.0, 4.0) var stealth_speed_factor: float = 2.2
+@export_range(1, 4) var stealth_nukes: int = 2
+## Share of a large ship's full strength each nuke removes (0.5 = 3 of a Basestar's 6 hits).
+@export_range(0.1, 1.0) var stealth_nuke_strength: float = 0.5
+## Seconds between its two shots.
+@export_range(1.0, 15.0) var stealth_shot_seconds: float = 4.0
+## Distance from the target where it fires.
+@export_range(0.1, 0.8) var stealth_fire_range: float = 0.35
+@export_range(0.1, 1.5) var stealth_nuke_speed: float = 0.5
+## Rearm time after it lands safely, and the rebuild time after it is destroyed
+## (no message or countdown is shown for either).
+@export_range(10.0, 600.0) var stealth_rearm_seconds: float = 60.0
+@export_range(30.0, 900.0) var stealth_rebuild_normal_seconds: float = 180.0
+@export_range(30.0, 900.0) var stealth_rebuild_hard_seconds: float = 240.0
+## Its DRADIS tag blinks this fast until it fires (then enemies can see it).
+@export_range(2.0, 12.0) var stealth_blink_hz: float = 6.0
+@export var stealth_ready_sound_enabled: bool = true
+@export_range(-40.0, 0.0) var stealth_ready_volume_db: float = -12.0
+
 var contacts: Array[Dictionary] = []
 var pending: Array[Dictionary] = []
 var next_id: int = 1
@@ -629,6 +657,16 @@ var resurrections_escaped: int = 0
 var fighter_points_lost: int = 0
 var viper_evades: int = 0
 var fighter_losses_by := {"raider": 0, "flak": 0, "returning": 0}
+## 1.09 Stealth Viper state. The cooldown covers both rearming and rebuilding.
+var stealth_cooldown_remaining: float = 0.0
+var stealth_was_ready: bool = false
+var stealth_ready_player: AudioStreamPlayer
+var stealth_ready_sounds: int = 0
+var stealth_launches: int = 0
+var stealth_nukes_fired: int = 0
+var stealth_nuke_hits: int = 0
+var stealth_lost: int = 0
+var stealth_recovered: int = 0
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -698,6 +736,8 @@ func _ready() -> void:
 	emp_player.max_polyphony = 1
 	repair_sound_player = _boom_player("RepairChargeAudio", BattleAudio.make_repair_charge(rapid_repair_seconds), repair_sound_volume_db)
 	repair_sound_player.max_polyphony = 1
+	stealth_ready_player = _boom_player("StealthReadyAudio", make_stealth_ready_sound(), stealth_ready_volume_db)
+	stealth_ready_player.max_polyphony = 1
 	reset_battle()
 
 func _process(delta: float) -> void:
@@ -757,6 +797,7 @@ func _process(delta: float) -> void:
 			_identify_basestar(contact)
 	_update_vipers(delta)
 	_update_raptors(delta)
+	_update_stealth(delta)
 	_resolve_missiles()
 	if not is_defeated():
 		_update_own_weapons(delta)
@@ -951,6 +992,9 @@ func _update_raider(raider: Dictionary, delta: float) -> void:
 	for other in contacts:
 		var returning_viper: bool = Icons.is_viper(other.kind) and other.get("phase", "") == "return"
 		var fighter: bool = fighter_losses_enabled and (Icons.is_viper(other.kind) or other.kind == "raptor") and other.get("phase", "") != "launch"
+		# 1.09: a Stealth Viper can be seen (and hunted) once it has fired.
+		if other.kind == "stealth_viper" and other.get("revealed", false):
+			fighter = true
 		if returning_viper or fighter:
 			var gap: float = raider.position.distance_to(other.position)
 			var rank := gap * (0.5 if returning_viper else 1.0)
@@ -962,7 +1006,11 @@ func _update_raider(raider: Dictionary, delta: float) -> void:
 		_steer(raider, prey.position, small_hostile_speed * 1.3, delta)
 		if nearest <= 0.05 and raider.attack_cooldown <= 0.0:
 			raider.attack_cooldown = maxf(0.5, raider_attack_cooldown)
-			if Icons.is_viper(prey.kind) and prey.get("phase", "") == "return":
+			if prey.kind == "stealth_viper":
+				# More fragile than a Viper: one hit destroys it.
+				if rng.randf() < clampf(raider_hit_chance, 0.0, 1.0):
+					_lose_stealth(prey)
+			elif Icons.is_viper(prey.kind) and prey.get("phase", "") == "return":
 				if rng.randf() < clampf(returning_viper_loss_chance, 0.0, 1.0):
 					fighter_losses_by["returning"] += 1
 					_lose_fighter(prey, "VIPER LOST ON RETURN | RAIDERS HUNTING RETURNING FLIGHTS")
@@ -1021,6 +1069,12 @@ func display_color(contact: Dictionary) -> Color:
 		var shimmer := 0.5 + 0.5 * sin(TAU * 9.0 * battle_time + float(String(contact.id).hash() % 7))
 		color = emp_color.lerp(Color(0.85, 0.96, 1.0), shimmer * 0.6)
 		color.a = 0.65 + 0.35 * shimmer
+	elif contact.kind == "stealth_viper" and contact.get("phase", "") == "return":
+		color = color.lerp(Color.WHITE, clampf(returning_lighten, 0.0, 0.8))
+		color.a = 0.55 + 0.45 * (0.5 + 0.5 * cos(TAU * returning_flash_hz * battle_time))
+	elif contact.kind == "stealth_viper" and not contact.get("revealed", false):
+		# Rapid blink while still hidden from the enemy.
+		color.a = 1.0 if int(battle_time * stealth_blink_hz * 2.0) % 2 == 0 else 0.3
 	elif contact.kind == "heavy_raider" and contact.get("phase", "") == "emp_return":
 		color = color.lerp(Color.WHITE, clampf(returning_lighten, 0.0, 0.8))
 		color.a = 0.55 + 0.45 * (0.5 + 0.5 * cos(TAU * returning_flash_hz * battle_time))
@@ -1149,6 +1203,11 @@ func request_ftl_jump() -> bool:
 		return false
 	score = maxi(0, score - ftl_score_cost)
 	var left_resurrection := count_kind("resurrection_ship") > 0
+	# 1.09: a Stealth Viper out on its run jumps with the fleet and starts rearming.
+	if count_kind("stealth_viper") > 0:
+		stealth_recovered += 1
+		stealth_cooldown_remaining = maxf(1.0, stealth_rearm_seconds)
+		stealth_event.emit("Stealth Viper recovered at FTL jump | rearming %ds" % int(stealth_cooldown_remaining))
 	contacts.clear()
 	pending.clear()
 	impacts.clear()
@@ -1193,6 +1252,13 @@ func _set_status(message: String, seconds: float) -> void:
 
 func reset_battle() -> void:
 	active_difficulty = clampi(difficulty, 0, 2)
+	stealth_cooldown_remaining = 0.0
+	stealth_was_ready = false
+	stealth_launches = 0
+	stealth_nukes_fired = 0
+	stealth_nuke_hits = 0
+	stealth_lost = 0
+	stealth_recovered = 0
 	auto_battery_started = false
 	auto_firewall_started = false
 	explosions.clear()
@@ -1339,7 +1405,7 @@ func size_for_kind(kind: String) -> float:
 		return resurrection_icon_scale
 	if kind == "heavy_raider":
 		return small_ship_icon_scale * 1.20
-	if kind == "viper" or kind == "raider":
+	if kind == "viper" or kind == "raider" or kind == "stealth_viper":
 		return small_ship_icon_scale
 	return 1.0
 
@@ -1622,8 +1688,6 @@ func contact_tag(contact: Dictionary) -> String:
 			text = "HULL DRAIN"
 		elif contact.phase == "emp":
 			text = "EMP OVERLOAD"
-		elif contact.phase == "emp_return":
-			text = "HEAVY RAIDER RTB"
 	elif contact.kind in ["viper", "raider", "raptor"] and not show_full_tags:
 		text = contact.kind.to_upper()
 	elif contact.kind in ["missile", "own_missile", "raptor_missile"] and not show_full_tags:
@@ -1635,8 +1699,10 @@ func contact_tag(contact: Dictionary) -> String:
 		# Damaged Vipers and Raptors show their remaining strength.
 		if contact.kind in ["viper", "raptor"] and int(contact.get("health", 1)) < int(contact.get("max_health", 1)):
 			text += " %d%%" % fighter_health_percent(contact)
-	elif contact.kind == "flak":
+	elif contact.kind in ["flak", "stealth_nuke"]:
 		text = ""
+	elif contact.kind == "stealth_viper":
+		text = "STEALTH"
 	return text
 
 func _draw_contact(contact: Dictionary, font: Font) -> void:
@@ -1657,11 +1723,11 @@ func _draw_contact(contact: Dictionary, font: Font) -> void:
 		var halo := color
 		halo.a = flash * 0.38
 		draw_arc(point, (18.0 + (1.0 - flash) * 9.0) * marker_scale, 0.0, TAU, 40, halo, 1.0, true)
-	if contact.kind in ["missile", "own_missile", "raptor_missile", "nuke", "flak"]:
+	if contact.kind in ["missile", "own_missile", "raptor_missile", "nuke", "flak", "stealth_nuke"]:
 		var aim: Vector2 = projection(contact.get("target_position", own_ship_position)).point
 		var direction := point.direction_to(aim)
 		var side := Vector2(-direction.y, direction.x)
-		var length_scale := 1.8 if contact.kind == "nuke" else (0.65 if contact.kind in ["raptor_missile", "flak"] else 1.0)
+		var length_scale := 1.8 if contact.kind in ["nuke", "stealth_nuke"] else (0.65 if contact.kind in ["raptor_missile", "flak"] else 1.0)
 		var arrow := PackedVector2Array([
 			point + direction * 6.0 * length_scale,
 			point - direction * 4.0 * length_scale + side * 2.5 * length_scale,
@@ -1672,7 +1738,7 @@ func _draw_contact(contact: Dictionary, font: Font) -> void:
 		draw_polyline(arrow, color, 1.0, true)
 		draw_line(point - direction * 5.0, point - direction * 12.0, Color(color, 0.45), 1.0, true)
 	else:
-		Icons.draw_icon(self, contact.kind, point, marker_scale, color)
+		Icons.draw_icon(self, "viper" if contact.kind == "stealth_viper" else contact.kind, point, marker_scale, color)
 	if show_labels:
 		var font_size := label_font_size + (2 if contact.kind in ["baseship", "resurrection_ship", "unknown"] else 0)
 		var text: String = contact_tag(contact)
@@ -1683,6 +1749,9 @@ func _draw_contact(contact: Dictionary, font: Font) -> void:
 		if contact.kind == "nuke":
 			# Above the warhead, so it stays clear of a Raptor chasing it from below.
 			label_point = point + Vector2(-label_size.x * 0.5, -22.0 * marker_scale)
+		elif contact.kind == "heavy_raider" and contact.get("phase", "") in ["hacking", "draining", "emp"]:
+			# 1.09: above a parked Heavy Raider, clear of the ship console below it.
+			label_point = point + Vector2(-label_size.x * 0.5, -24.0 * marker_scale)
 		draw_string_outline_and_text(font, label_point, text, font_size, label_color(color))
 	if contact.kind == "heavy_raider" and contact.get("phase", "") == "emp":
 		_draw_emp_sparks(point, marker_scale, contact)
@@ -3547,3 +3616,163 @@ func _lose_fighter(fighter: Dictionary, message: String) -> void:
 	score -= taken
 	fighter_points_lost += taken
 	_set_status("%s | -%d POINTS" % [message, maxi(0, penalty)], 3.0)
+
+
+# ------------------------------------------------------------------
+# 1.09 STEALTH VIPER: a fast special Viper carrying two nuclear missiles.
+# Offered on Normal and Hard when enough large ships are on screen. Hidden from
+# the enemy until it fires; one hit destroys it. Rearm and rebuild are silent.
+# ------------------------------------------------------------------
+func large_ship_count() -> int:
+	return count_kind("baseship") + count_kind("resurrection_ship")
+
+func stealth_out() -> bool:
+	return count_kind("stealth_viper") > 0
+
+func can_launch_stealth() -> bool:
+	return (stealth_viper_enabled and active_difficulty >= 1 and not is_defeated()
+		and safe_remaining <= 0.0 and not stealth_out() and stealth_cooldown_remaining <= 0.0
+		and large_ship_count() >= maxi(1, stealth_min_large_ships))
+
+func stealth_rebuild_seconds() -> float:
+	return stealth_rebuild_hard_seconds if active_difficulty >= 2 else stealth_rebuild_normal_seconds
+
+func launch_stealth() -> bool:
+	if not can_launch_stealth():
+		return false
+	var id := _new_id("SV")
+	contacts.append({"id": id, "kind": "stealth_viper", "faction": "friendly",
+		"position": launch_origin(0.0), "age": 0.0, "phase": "attack", "velocity": Vector3.ZERO,
+		"target_id": "", "nukes_left": maxi(1, stealth_nukes), "shot_timer": 0.0, "revealed": false})
+	stealth_launches += 1
+	stealth_was_ready = false
+	_play_launch(1)
+	_set_status("STEALTH VIPER LAUNCHED | NUCLEAR STRIKE ON CAPITAL SHIPS", 3.0)
+	stealth_event.emit("Stealth Viper launched | %d large ships on screen" % large_ship_count())
+	return true
+
+func _stealth_target(ship: Dictionary) -> Dictionary:
+	var current := find_contact(ship.get("target_id", ""))
+	if not current.is_empty() and current.kind in CAPITAL_KINDS:
+		return current
+	var chosen: Dictionary = {}
+	var best := INF
+	for contact in contacts:
+		if contact.kind in CAPITAL_KINDS:
+			var gap: float = ship.position.distance_to(contact.position)
+			if gap < best:
+				best = gap
+				chosen = contact
+	return chosen
+
+func _update_stealth(delta: float) -> void:
+	if not stealth_out():
+		stealth_cooldown_remaining = maxf(0.0, stealth_cooldown_remaining - delta)
+	var ready := can_launch_stealth()
+	if ready and not stealth_was_ready:
+		if stealth_ready_sound_enabled:
+			stealth_ready_player.volume_db = stealth_ready_volume_db
+			stealth_ready_player.play()
+			stealth_ready_sounds += 1
+		stealth_event.emit("Stealth Weapon available | %d large ships" % large_ship_count())
+	stealth_was_ready = ready
+	var speed := maxf(0.001, viper_speed) * stealth_speed_factor
+	for ship in contacts.duplicate():
+		if ship.kind == "stealth_nuke":
+			_update_stealth_nuke(ship, delta)
+			continue
+		if ship.kind != "stealth_viper":
+			continue
+		ship.shot_timer = maxf(0.0, ship.shot_timer - delta)
+		if ship.phase == "attack":
+			var target := _stealth_target(ship)
+			if target.is_empty():
+				# Nothing left to strike: bring the remaining nukes home.
+				ship.phase = "return"
+			else:
+				ship.target_id = target.id
+				var standoff: Vector3 = target.position + target.position.direction_to(own_ship_position) * stealth_fire_range * 0.85
+				_steer(ship, standoff, speed, delta)
+				if ship.position.distance_to(target.position) <= stealth_fire_range and ship.shot_timer <= 0.0:
+					_fire_stealth_nuke(ship, target)
+		if ship.phase == "return":
+			_steer(ship, launch_origin(0.0), speed, delta)
+			if ship.position.distance_to(launch_origin(0.0)) <= 0.03:
+				_remove_contact(ship.id)
+				stealth_recovered += 1
+				stealth_cooldown_remaining = maxf(1.0, stealth_rearm_seconds)
+				stealth_event.emit("Stealth Viper recovered | rearming %ds" % int(stealth_cooldown_remaining))
+
+func _fire_stealth_nuke(ship: Dictionary, target: Dictionary) -> void:
+	var id := _new_id("SN")
+	contacts.append({"id": id, "kind": "stealth_nuke", "faction": "friendly",
+		"position": ship.position, "age": 0.0, "target_id": target.id, "target_position": target.position})
+	ship.nukes_left -= 1
+	ship.revealed = true
+	ship.shot_timer = maxf(1.0, stealth_shot_seconds)
+	stealth_nukes_fired += 1
+	_set_status("STEALTH VIPER NUKE AWAY | %s TARGETED" % ("RESURRECTION SHIP" if target.kind == "resurrection_ship" else "BASESTAR"), 2.5)
+	stealth_event.emit("Stealth Viper fired a nuke at %s | %d left" % [target.id, ship.nukes_left])
+	if ship.nukes_left <= 0:
+		ship.phase = "return"
+
+func _update_stealth_nuke(nuke: Dictionary, delta: float) -> void:
+	var target := find_contact(nuke.target_id)
+	if target.is_empty() or target.kind not in CAPITAL_KINDS:
+		# Its target is gone: turn toward the nearest other large ship.
+		target = _stealth_target({"position": nuke.position, "target_id": ""})
+		if target.is_empty() or nuke.age > 20.0:
+			_remove_contact(nuke.id)
+			return
+		nuke.target_id = target.id
+	nuke.target_position = target.position
+	nuke.position = nuke.position.move_toward(target.position, delta * movement_speed * stealth_nuke_speed)
+	if nuke.position.distance_to(target.position) > 0.025:
+		return
+	_remove_contact(nuke.id)
+	stealth_nuke_hits += 1
+	var damage := float(target.max_hits) * clampf(stealth_nuke_strength, 0.1, 1.0)
+	_explode(target.position, "missile")
+	if target.kind == "resurrection_ship":
+		_hit_resurrection(target, damage, "stealth")
+	else:
+		_hit_basestar(target, damage)
+
+func _lose_stealth(ship: Dictionary) -> void:
+	if ship.is_empty() or find_contact(ship.id).is_empty():
+		return
+	stealth_lost += 1
+	impacts.append({"position": ship.position, "age": 0.0})
+	_explode(ship.position, "own_craft")
+	_remove_contact(ship.id)
+	stealth_cooldown_remaining = stealth_rebuild_seconds()
+	_set_status("STEALTH VIPER LOST TO RAIDER FIRE", 3.0)
+	stealth_event.emit("Stealth Viper destroyed | rebuilding %ds" % int(stealth_cooldown_remaining))
+
+static func make_stealth_ready_sound() -> AudioStreamWAV:
+	# Original bright three-note rising chime with a soft shimmer. Generated PCM.
+	var sample_rate := 48000
+	var frame_total := 33600  # 0.7 seconds
+	var data := PackedByteArray()
+	data.resize(frame_total * 2)
+	var notes := [[0.0, 1318.5], [0.11, 1661.2], [0.22, 1975.5]]
+	for index in range(frame_total):
+		var time := float(index) / float(sample_rate)
+		var value := 0.0
+		for note in notes:
+			var local_time: float = time - float(note[0])
+			if local_time >= 0.0:
+				var envelope := minf(local_time / 0.006, 1.0) * exp(-local_time * 5.5)
+				var freq: float = note[1]
+				value += envelope * (0.20 * sin(TAU * freq * local_time)
+					+ 0.06 * sin(TAU * freq * 2.0 * local_time)
+					+ 0.03 * sin(TAU * freq * 3.01 * local_time))
+		var tail := clampf((0.7 - time) / 0.08, 0.0, 1.0)
+		data.encode_s16(index * 2, int(clampf(value * tail, -1.0, 1.0) * 32767.0))
+	var stream := AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_16_BITS
+	stream.mix_rate = sample_rate
+	stream.stereo = false
+	stream.loop_mode = AudioStreamWAV.LOOP_DISABLED
+	stream.data = data
+	return stream

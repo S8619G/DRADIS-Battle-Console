@@ -13,6 +13,7 @@ A tactical defense game for Windows (x64 and arm64) and Mac (Apple M-series and 
 - Threat waves every 2 minutes, with more Basestars, faster launches and more Heavy Raiders.
 - Viper squadrons that split up to engage and rejoin when the area is clear.
 - Raptors for nuclear missiles and Basestars, ship missiles that change target, a defense battery for close missiles, and a firewall and EMP against Heavy Raider hacking.
+- A Stealth Viper with two nuclear missiles on Normal and Hard: when 3 or more large ships are on the scope, the top nacelle of the ship becomes a blue STEALTH WEAPON button.
 - Rapid Repair, FTL jumps, Easy, Normal and Hard difficulty, and optional auto modes.
 - High scores with per-battle stats (hover or tap an entry) and the best score shown during play; settings saved on the computer, with a session log for troubleshooting.
 
@@ -47,6 +48,8 @@ The console buttons along the bottom:
 | FIREWALL / EMP | Blocks a Heavy Raider hack. When the firewall runs out, the button splits to offer an EMP if a charge is ready. |
 | LAUNCH VIPERS | Launches Vipers to intercept Raiders and missiles. |
 | LAUNCH RAPTOR | Launches a Raptor that fires at nuclear missiles and Basestars. |
+
+On Normal and Hard, the top nacelle of the ship turns into a blue **STEALTH WEAPON** button while 3 or more large ships are on the scope and the Stealth Viper is ready. Click or tap it to launch the Stealth Viper.
 
 The gear icon at the top right opens Settings (volumes, difficulty and auto modes). The full rules are in the [User Guide](docs/USER_GUIDE.md).
 

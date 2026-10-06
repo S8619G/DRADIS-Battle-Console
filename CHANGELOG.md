@@ -2,6 +2,23 @@
 
 Functional changes in each version, newest first. Earlier development-stage notes are in `docs/history/`.
 
+## 1.09 (2026-10-06)
+
+Builds on DRADIS Battle Console 1.08.
+
+### Added
+
+- Stealth Viper. On Normal and Hard, while 3 or more large ships (Basestars and the Resurrection Ship) are on the scope and it is ready, the top nacelle of the ship turns into a blue STEALTH WEAPON button with a gentle pulse and a bright ready chime. At all other times the nacelle keeps the normal hull color. Clicking or tapping it launches a fast Stealth Viper (tag STEALTH, rapid blink while hidden) with two nuclear missiles fired 4 seconds apart; each does 3 of a Basestar's 6 hits or 5 of a Resurrection Ship's 10. Once it has fired, the enemy can see it, and one Raider hit destroys it. It rearms 60 seconds after a safe return; after a loss a new one takes 3 minutes on Normal and 4 on Hard. Rearm and rebuild show no message or timer. It finishes its run if large ships drop below 3, and an FTL jump brings it home. Never offered on Easy. Inspector: Contacts > Stealth Viper; ShipStatus > Stealth Weapon. Its events are logged.
+- Windows PCs with a Qualcomm GPU start with the ANGLE graphics driver. Godot's own ANGLE device list is kept, with two Qualcomm entries added; the Windows export preset always includes the ANGLE files. Other PCs are unchanged.
+- The session log notes when the game window loses or gets focus.
+
+### Changed
+
+- High-score rows show the difficulty in full (EASY, NORMAL, HARD) instead of the wave and letter; the wave is in the hover box.
+- A Heavy Raider returning after an EMP shows HEAVY RAIDER instead of HEAVY RAIDER RTB.
+- A hacking Heavy Raider's tag sits above it, clear of the ship console.
+- Version 1.09 in the project and both export presets.
+
 ## 1.08 (2026-10-06)
 
 Builds on DRADIS Battle Console 1.07.

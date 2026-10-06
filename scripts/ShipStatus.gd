@@ -7,6 +7,12 @@ extends Control
 ## always stays visible here (Emp On Ship brings back the 1.06 USE EMP box).
 const OUTLINE = preload("res://assets/ship_outline.png")
 const FILL = preload("res://assets/ship_fill.png")
+## 1.09: the top nacelle only, cut from the approved art, for the STEALTH WEAPON button.
+const NACELLE_FILL = preload("res://assets/ship_nacelle_fill.png")
+const NACELLE_OUTLINE = preload("res://assets/ship_nacelle_outline.png")
+## Top nacelle bounds and label center, in texture pixels.
+const NACELLE_BOX := Rect2(479, 174, 695, 109)
+const NACELLE_LABEL := Vector2(826, 230)
 ## Top (port-side) edge of the approved outline, in REGION pixels (traced from
 ## the retained ship_upper_defense.svg). The Defense Battery arc is built from it.
 const TOP_EDGE := [Vector2(0, 150), Vector2(6, 142), Vector2(12, 139), Vector2(49, 130), Vector2(136, 115),
@@ -51,7 +57,18 @@ const REGION := Rect2(88, 169, 1522, 597)
 @export var emp_blue := Color(0.35, 0.78, 1.0)
 ## 1.07: off = INTRUSION DETECTION always shows; the EMP is on the FIREWALL button.
 @export var emp_on_ship: bool = false
+@export_group("Stealth Weapon")
+## 1.09: the top nacelle turns into this blue button only while the Stealth Viper
+## can launch; otherwise it keeps the normal hull color.
+@export var stealth_blue := Color("#2a9dff")
+@export var stealth_label: String = "STEALTH WEAPON"
+@export_range(10, 24) var stealth_font_size: int = 15
+## Gentle brightness pulse (cycles per second), not a flash.
+@export_range(0.2, 2.0) var stealth_pulse_hz: float = 0.8
 @onready var battle: Control = get_node(contacts_path)
+var stealth_button: Button
+var stealth_box := Rect2()
+signal stealth_launched
 ## Invisible click area over the USE EMP box (shown only while the EMP can fire).
 var emp_button: Button
 var emp_box := Rect2()
@@ -69,6 +86,21 @@ func _ready() -> void:
 	emp_button.visible = false
 	emp_button.pressed.connect(_on_emp_pressed)
 	add_child(emp_button)
+	stealth_button = Button.new()
+	stealth_button.name = "StealthWeaponButton"
+	stealth_button.flat = true
+	stealth_button.focus_mode = Control.FOCUS_NONE
+	stealth_button.mouse_filter = Control.MOUSE_FILTER_STOP
+	stealth_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	for state in ["normal", "hover", "pressed", "focus", "disabled", "hover_pressed"]:
+		stealth_button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+	stealth_button.visible = false
+	stealth_button.pressed.connect(_on_stealth_pressed)
+	add_child(stealth_button)
+
+func _on_stealth_pressed() -> void:
+	if is_instance_valid(battle) and battle.launch_stealth():
+		stealth_launched.emit()
 
 func _on_emp_pressed() -> void:
 	if is_instance_valid(battle) and battle.request_emp():
@@ -81,6 +113,12 @@ func _process(_delta: float) -> void:
 		if can_fire:
 			emp_button.position = emp_box.position
 			emp_button.size = emp_box.size
+	if is_instance_valid(stealth_button) and is_instance_valid(battle):
+		var ready: bool = battle.can_launch_stealth() and stealth_box.size.x > 0.0
+		stealth_button.visible = ready
+		if ready:
+			stealth_button.position = stealth_box.position
+			stealth_button.size = stealth_box.size
 	queue_redraw()
 
 static func damage_color(fraction: float) -> Color:
@@ -105,6 +143,10 @@ func _draw() -> void:
 		tint = Color("#ff243f")
 	draw_texture_rect_region(FILL, rect, REGION, Color(tint, fill_opacity))
 	draw_texture_rect_region(OUTLINE, rect, REGION, Color(tint, 0.95))
+	var k := dimensions.x / REGION.size.x
+	stealth_box = Rect2(rect.position + (NACELLE_BOX.position - REGION.position) * k, NACELLE_BOX.size * k)
+	if battle.can_launch_stealth():
+		_draw_stealth_button(rect, k)
 	if battle.prox_active and not battle.is_defeated():
 		# Ship's port/left side is the TOP of this horizontal screen silhouette.
 		# A separate flak arc stays above the art with a visible air gap.
@@ -252,6 +294,22 @@ func _draw_use_emp(center: Vector2) -> void:
 	var note := "%d CHARGE%s" % [charges, "" if charges == 1 else "S"]
 	var nw := font.get_string_size(note, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
 	draw_string(font, mid + Vector2(-nw * 0.5, 21.0), note, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(emp_blue, 0.95))
+
+func stealth_pulse() -> float:
+	return 0.5 + 0.5 * cos(TAU * stealth_pulse_hz * battle.battle_time)
+
+func _draw_stealth_button(rect: Rect2, k: float) -> void:
+	# Nacelle-only masks: no blue reaches the rest of the hull.
+	var pulse := stealth_pulse()
+	draw_texture_rect_region(NACELLE_FILL, rect, REGION, Color(0, 0, 0, 1))
+	draw_texture_rect_region(NACELLE_FILL, rect, REGION, Color(stealth_blue, 0.55 + 0.35 * pulse))
+	draw_texture_rect_region(NACELLE_OUTLINE, rect, REGION, stealth_blue.lerp(Color.WHITE, 0.45 * pulse))
+	var font := ThemeDB.fallback_font
+	var center := rect.position + (NACELLE_LABEL - REGION.position) * k
+	var w := font.get_string_size(stealth_label, HORIZONTAL_ALIGNMENT_LEFT, -1, stealth_font_size).x
+	var at := center + Vector2(-w * 0.5, stealth_font_size * 0.36)
+	draw_string_outline(font, at, stealth_label, HORIZONTAL_ALIGNMENT_LEFT, -1, stealth_font_size, 3, Color(0, 0.05, 0.15, 0.9))
+	draw_string(font, at, stealth_label, HORIZONTAL_ALIGNMENT_LEFT, -1, stealth_font_size, Color(1, 1, 1, 0.6 + 0.4 * pulse))
 
 func _text(value: String, center: Vector2, font_size: int, color: Color) -> void:
 	var font := ThemeDB.fallback_font
