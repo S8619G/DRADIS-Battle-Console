@@ -1,0 +1,22 @@
+# Godot 4 editor cache and imported files (rebuilt automatically when the project is opened)
+.godot/
+
+# Exported games and packages: attach these to a GitHub Release instead of committing them
+*.exe
+*.dmg
+*.app/
+*.zip
+*.pck
+*.apk
+*.aab
+
+# Reference material from the TV series is kept out of the public repository
+references/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local logs
+*.log
