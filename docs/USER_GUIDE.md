@@ -2,6 +2,8 @@
 
 This is the full guide that ships with the editable project. In the GitHub repository it lives in `docs/`, the per-version changelogs are combined in `CHANGELOG.md`, and the `references` folder is not included.
 
+**Supported computers:** Windows PCs with Intel or AMD processors (x64), Windows PCs with ARM processors (arm64), and Macs with Apple M-series chips or Intel processors (one Universal Mac app covers both).
+
 DRADIS Battle Console is an unofficial, non-commercial fan project and is not affiliated with or endorsed by the owners of Battlestar Galactica. See `NOTICE.md` at the top of the repository for the full disclaimer and the photosensitivity warning.
 
 This complete, editable project is version 1.07 of DRADIS Battle Console, a full build. It builds on 1.06 (EMP defense, Rapid Repair sound and glow, missiles on top, hover pop-ups off, the version link in Settings), 1.05 (battery kill points, ship missiles at nukes, the Double Missile bonus, the session log), 1.04 (explosions, speed by difficulty, Auto Rapid Repair, Remember Settings), 1.03 (auto launch, auto FTL, FTL flash, Quit, window fit), 1.02 (multi-hit nukes, Viper squadrons) and 1.01 (Settings, volumes, difficulty, auto battery and firewall). Version 1.07 adds:

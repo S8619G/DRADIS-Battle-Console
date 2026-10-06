@@ -1,6 +1,6 @@
 # DRADIS Battle Console
 
-A tactical defense game for Windows and macOS, inspired by the DRADIS radar console from the 2003 Battlestar Galactica series. Cylon Raiders, Heavy Raiders, Basestars, nuclear missiles and Resurrection Ships close in on the scope in rising waves. Defend your battlestar with Vipers, Raptors, ship missiles, the defense battery and the firewall, using only the mouse or a touch screen.
+A tactical defense game for Windows (x64 and arm64) and Mac (Apple M-series and Intel), inspired by the DRADIS radar console from the 2003 Battlestar Galactica series. Cylon Raiders, Heavy Raiders, Basestars, nuclear missiles and Resurrection Ships close in on the scope in rising waves. Defend your battlestar with Vipers, Raptors, ship missiles, the defense battery and the firewall, using only the mouse or a touch screen.
 
 > **Unofficial fan project.** DRADIS Battle Console is a free, non-commercial fan tribute. It is not affiliated with, authorized or endorsed by Universal City Studios LLC, NBCUniversal, Syfy or any owner of the Battlestar Galactica franchise. All names belong to their owners and are used only to identify the series. No footage, images or audio from the series are included. See [NOTICE.md](NOTICE.md) for the full disclaimer and the photosensitivity warning.
 
@@ -16,12 +16,20 @@ A tactical defense game for Windows and macOS, inspired by the DRADIS radar cons
 - Rapid Repair, FTL jumps, Easy, Normal and Hard difficulty, and optional auto modes.
 - High scores and settings saved on the computer, with a session log for troubleshooting.
 
+## Supported computers
+
+| Computer | Download |
+|---|---|
+| Windows PC with an Intel or AMD processor (x64) | `DRADIS_Battle_Console_<version>_Windows_x64.exe` |
+| Windows PC with an ARM processor (arm64), such as a Surface Pro or Snapdragon laptop | `DRADIS_Battle_Console_<version>_Windows_arm64.exe` |
+| Mac with an Apple M-series chip (M1 or later) or an Intel processor | `DRADIS_Battle_Console_<version>_Mac.dmg` (one Universal app for both) |
+
 ## Download and play
 
 Ready-to-play copies are on the [Releases](https://github.com/S8619G/DRADIS-Battle-Console/releases) page when available:
 
-- **Windows:** download the `.exe` for your PC (x64 for most PCs, arm64 for Windows on ARM) and double-click it. The game is not code-signed, so Windows may show "Windows protected your PC". Click **More info**, then **Run anyway**.
-- **Mac:** open the `.dmg` and drag the app to Applications. The app is not notarized. The first time, open **System Settings > Privacy & Security** and click **Open Anyway** next to DRADIS Battle Console.
+- **Windows:** download the `.exe` for your PC (x64 for Intel and AMD PCs, arm64 for Windows on ARM PCs) and double-click it. The game is not code-signed, so Windows may show "Windows protected your PC". Click **More info**, then **Run anyway**.
+- **Mac:** the same `.dmg` works on Macs with Apple M-series chips and on Intel Macs. Open it and drag the app to Applications. The app is not notarized. The first time, open **System Settings > Privacy & Security** and click **Open Anyway** next to DRADIS Battle Console.
 
 No installation or extra software is needed.
 
@@ -44,7 +52,7 @@ The gear icon at the top right opens Settings (volumes, difficulty and auto mode
 
 ## Run from source
 
-1. Install [Godot 4.7](https://godotengine.org/download) (standard version; the .NET version is not needed).
+1. Install [Godot 4.7](https://godotengine.org/download) (standard version; the .NET version is not needed). Godot runs on Windows x64 and arm64 and on Apple M-series and Intel Macs.
 2. Download this repository (**Code > Download ZIP**) and extract it, or clone it.
 3. In the Godot Project Manager, choose **Import** and select `project.godot`.
 4. Press F5 (or click **Run Project**).

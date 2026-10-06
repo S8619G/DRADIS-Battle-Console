@@ -13,7 +13,7 @@ Finished games (the Windows `.exe` and the Mac `.dmg`) are not stored in the rep
 
 Follow the **Export** section of `docs/USER_GUIDE.md`. Godot 4.7 export templates must be installed once (**Editor > Manage Export Templates**). Check that **Build > Development Build** on the DradisConsole node is off before exporting.
 
-Recommended file names:
+Every release should include all three so it covers Windows x64, Windows arm64, and Macs with Apple M-series chips or Intel processors (the Mac preset builds one Universal app for both). Recommended file names:
 
 - `DRADIS_Battle_Console_1.08_Windows_x64.exe`
 - `DRADIS_Battle_Console_1.08_Windows_arm64.exe`
@@ -34,6 +34,10 @@ GitHub adds the source code as ZIP and TAR downloads to every release automatica
 
 - **Windows:** the game is not code-signed, so Windows may show "Windows protected your PC". Click **More info**, then **Run anyway**.
 - **Mac:** the app is not notarized. Open the DMG and drag the app to Applications. The first time, macOS may say it cannot check the app. Close that message, open **System Settings > Privacy & Security**, scroll down and click **Open Anyway** next to DRADIS Battle Console.
+
+## Supported computers (paste near the top of each release description)
+
+> Runs on Windows PCs with Intel or AMD processors (x64), Windows PCs with ARM processors (arm64), and Macs with Apple M-series chips or Intel processors (one Universal Mac app).
 
 ## Release notice (paste at the end of each release description)
 
