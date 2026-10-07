@@ -524,11 +524,11 @@ text = "INCOMING MISSILES 0"
 
 [node name="HackAlert" type="Label" parent="."]
 layout_mode = 1
-offset_left = 82.0
-offset_top = 762.0
-offset_right = 420.0
-offset_bottom = 926.0
-theme_override_font_sizes/font_size = 19
+offset_left = 390.0
+offset_top = 824.0
+offset_right = 745.0
+offset_bottom = 958.0
+theme_override_font_sizes/font_size = 17
 mouse_filter = 2
 
 [node name="BattleStatus" type="Label" parent="."]

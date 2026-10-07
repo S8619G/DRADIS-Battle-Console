@@ -17,6 +17,8 @@ signal resurrection_arrived(contact_id: String)
 signal resurrection_destroyed(contact_id: String)
 ## 1.09: Stealth Viper events for the session log (ready, launched, fired, lost, recovered).
 signal stealth_event(message: String)
+## 1.1.0: other battle events for the session log (nuke speed bonus, recovery pauses).
+signal battle_event(message: String)
 
 ## 1.07: kinds a ship or Raptor missile may attack (also when it changes target).
 const MISSILE_TARGET_KINDS := ["baseship", "heavy_raider", "resurrection_ship", "nuke"]
@@ -158,11 +160,20 @@ const SMALL_HOSTILE_KINDS := ["raider"]
 @export_range(-40.0, 0.0) var nuclear_beep_volume_db: float = -12.0
 @export_range(0.5, 3.0) var nuclear_beep_far_seconds: float = 1.2
 @export_range(0.10, 0.4) var nuclear_beep_near_seconds: float = 0.15
+## 1.1.0: each Basestar nuke flies up to this much faster than usual, picked at
+## launch (0.08 = 0% to 8% faster). 0 turns the random bonus off.
+@export_range(0.0, 0.3) var nuke_speed_random_max: float = 0.08
+## 1.1.0: on Hard, each nuke's bonus leans to the top of the range (the larger of
+## two random picks, about 5.3% on average instead of 4%).
+@export var hard_nuke_speed_lean: bool = true
 
 @export_group("Raptors")
 @export_range(1, 4) var max_raptors: int = 2
 @export_range(0.03, 0.13) var raptor_speed: float = 0.10
 @export_range(2.0, 30.0) var raptor_launch_cooldown: float = 8.0
+## 1.1.0: after a Raptor lands, LAUNCH RAPTOR waits this long (each landing restarts it).
+## When the launch cooldown is longer, the longer one wins. Auto Launch waits too.
+@export_range(0.0, 20.0) var raptor_recovery_seconds: float = 5.0
 @export_range(30.0, 180.0) var raptor_sortie_seconds: float = 70.0
 @export_range(3.0, 20.0) var raptor_fire_interval: float = 8.0
 @export_range(0.1, 0.9) var raptor_missile_damage: float = 0.5
@@ -305,6 +316,10 @@ const SMALL_HOSTILE_KINDS := ["raider"]
 @export var auto_launch_vipers: bool = false
 ## Launches Raptors by itself for nukes, and keeps one Raptor out against Basestars.
 @export var auto_launch_raptors: bool = false
+## 1.1.0: with Auto Launch Raptors on and at least this many nukes on screen, every
+## available Raptor launches at once (the launch cooldown is skipped; the landing
+## pause still applies). 0 turns this off.
+@export_range(0, 6) var auto_all_raptors_nukes: int = 2
 ## Jumps by itself when the hull falls below the level below (costs the usual FTL points).
 @export var auto_ftl: bool = false
 @export_range(1.0, 50.0) var auto_ftl_hull_percent: float = 10.0
@@ -445,6 +460,9 @@ const SMALL_HOSTILE_KINDS := ["raider"]
 @export_range(1, 12) var max_vipers: int = 6
 @export_range(1, 4) var vipers_per_launch: int = 2
 @export_range(1.0, 15.0) var launch_cooldown_seconds: float = 4.0
+## 1.1.0: after a Viper lands, LAUNCH VIPERS waits this long (each landing restarts it,
+## so it unlocks this long after the last Viper of a group lands). Auto Launch waits too.
+@export_range(0.0, 20.0) var viper_recovery_seconds: float = 3.0
 @export_range(10.0, 120.0) var sortie_seconds: float = 45.0
 
 @export_group("Returning Flights")
@@ -505,6 +523,16 @@ const SMALL_HOSTILE_KINDS := ["raider"]
 @export_range(2.0, 12.0) var stealth_blink_hz: float = 6.0
 @export var stealth_ready_sound_enabled: bool = true
 @export_range(-40.0, 0.0) var stealth_ready_volume_db: float = -12.0
+## 1.1.0: once it has fired, every Raider within this distance turns on it.
+@export_range(0.1, 1.0) var stealth_focus_range: float = 0.40
+## How far each Raider chases it before giving up and going back to its job.
+@export_range(0.05, 1.0) var stealth_pursuit_distance: float = 0.25
+## Raiders shoot at it from this distance, once every Stealth Shot Interval each.
+@export_range(0.05, 0.6) var stealth_shot_range: float = 0.30
+@export_range(0.3, 5.0) var stealth_shot_interval: float = 1.5
+## Chance each Raider shot destroys it (one hit is enough). Tuned so about one run
+## in four is lost in typical Normal and Hard battles.
+@export_range(0.0, 1.0) var stealth_hit_chance: float = 0.045
 
 var contacts: Array[Dictionary] = []
 var pending: Array[Dictionary] = []
@@ -667,6 +695,15 @@ var stealth_nukes_fired: int = 0
 var stealth_nuke_hits: int = 0
 var stealth_lost: int = 0
 var stealth_recovered: int = 0
+## 1.1.0 state: Raider shots at the Stealth Viper, landing pauses and nuke speeds.
+var stealth_shots_taken: int = 0
+var stealth_pursuits: int = 0
+var viper_recovery_remaining: float = 0.0
+var raptor_recovery_remaining: float = 0.0
+var viper_recovery_holds: int = 0
+var raptor_recovery_holds: int = 0
+var auto_all_raptor_launches: int = 0
+var nuke_speed_bonuses: Array[float] = []
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -760,6 +797,8 @@ func _process(delta: float) -> void:
 	_update_automation()
 	_update_viper_squadrons()
 	raptor_cooldown_remaining = maxf(0.0, raptor_cooldown_remaining - delta)
+	viper_recovery_remaining = maxf(0.0, viper_recovery_remaining - delta)
+	raptor_recovery_remaining = maxf(0.0, raptor_recovery_remaining - delta)
 	_update_repair(delta)
 	_update_rapid_repair(delta)
 	_update_klaxon()
@@ -984,6 +1023,9 @@ func _update_raider(raider: Dictionary, delta: float) -> void:
 			raiders_docked += 1
 			_remove_contact(raider.id)
 		return
+	# 1.1.0: once the Stealth Viper has fired, nearby Raiders turn on it first.
+	if raider.phase in ["harass", "approach"] and _raider_focus_stealth(raider, delta):
+		return
 	# Hunt returning Vipers (low on fuel and ammunition) first; with Fighter
 	# Losses on, Raiders also attack active Vipers and Raptors nearby.
 	var prey: Dictionary = {}
@@ -992,9 +1034,7 @@ func _update_raider(raider: Dictionary, delta: float) -> void:
 	for other in contacts:
 		var returning_viper: bool = Icons.is_viper(other.kind) and other.get("phase", "") == "return"
 		var fighter: bool = fighter_losses_enabled and (Icons.is_viper(other.kind) or other.kind == "raptor") and other.get("phase", "") != "launch"
-		# 1.09: a Stealth Viper can be seen (and hunted) once it has fired.
-		if other.kind == "stealth_viper" and other.get("revealed", false):
-			fighter = true
+		# 1.1.0: a revealed Stealth Viper is hunted by _raider_focus_stealth (above).
 		if returning_viper or fighter:
 			var gap: float = raider.position.distance_to(other.position)
 			var rank := gap * (0.5 if returning_viper else 1.0)
@@ -1006,11 +1046,7 @@ func _update_raider(raider: Dictionary, delta: float) -> void:
 		_steer(raider, prey.position, small_hostile_speed * 1.3, delta)
 		if nearest <= 0.05 and raider.attack_cooldown <= 0.0:
 			raider.attack_cooldown = maxf(0.5, raider_attack_cooldown)
-			if prey.kind == "stealth_viper":
-				# More fragile than a Viper: one hit destroys it.
-				if rng.randf() < clampf(raider_hit_chance, 0.0, 1.0):
-					_lose_stealth(prey)
-			elif Icons.is_viper(prey.kind) and prey.get("phase", "") == "return":
+			if Icons.is_viper(prey.kind) and prey.get("phase", "") == "return":
 				if rng.randf() < clampf(returning_viper_loss_chance, 0.0, 1.0):
 					fighter_losses_by["returning"] += 1
 					_lose_fighter(prey, "VIPER LOST ON RETURN | RAIDERS HUNTING RETURNING FLIGHTS")
@@ -1259,6 +1295,14 @@ func reset_battle() -> void:
 	stealth_nuke_hits = 0
 	stealth_lost = 0
 	stealth_recovered = 0
+	stealth_shots_taken = 0
+	stealth_pursuits = 0
+	viper_recovery_remaining = 0.0
+	raptor_recovery_remaining = 0.0
+	viper_recovery_holds = 0
+	raptor_recovery_holds = 0
+	auto_all_raptor_launches = 0
+	nuke_speed_bonuses.clear()
 	auto_battery_started = false
 	auto_firewall_started = false
 	explosions.clear()
@@ -1420,7 +1464,7 @@ func count_tracks() -> int:
 	return count_kind("baseship") + count_kind("unknown") + count_kind("raider") + count_kind("heavy_raider") + count_kind("resurrection_ship")
 
 func launch_vipers() -> int:
-	if is_defeated() or safe_remaining > 0.0 or launch_cooldown_remaining > 0.0:
+	if is_defeated() or safe_remaining > 0.0 or viper_ready_in() > 0.0:
 		return 0
 	var launched := 0
 	for index in range(mini(vipers_per_launch, maxi(0, max_vipers - count_vipers()))):
@@ -1568,6 +1612,7 @@ func _update_vipers(delta: float) -> void:
 			if viper.position.distance_to(home) < 0.025:
 				removed.append(viper.id)
 				vipers_returned += 1
+				_hold_after_landing("viper")
 				_set_status("VIPER RECOVERED | SORTIE COMPLETE, NOT DESTROYED", 3.0)
 			continue
 		if viper.phase == "launch":
@@ -2107,8 +2152,11 @@ func _launch_nuclear(base: Dictionary) -> String:
 	var id := _new_id("N")
 	contacts.append({"id": id, "kind": "nuke", "faction": "hostile",
 		"position": origin, "age": 0.0, "origin_id": base.id, "target_position": own_ship_position,
-		"launch_distance": origin.distance_to(own_ship_position)})
+		"launch_distance": origin.distance_to(own_ship_position), "speed_bonus": nuke_speed_bonus()})
 	nuclear_launches += 1
+	var bonus: float = contacts[-1].speed_bonus
+	nuke_speed_bonuses.append(bonus)
+	battle_event.emit("nuke %s launched | speed bonus +%.1f%%" % [id, bonus * 100.0])
 	nuclear_alert_queue.append(id)
 	_set_status("NUCLEAR LAUNCH DETECTED | LAUNCH RAPTOR OR FTL JUMP", 6.0)
 	return id
@@ -2164,7 +2212,7 @@ func nuclear_beep_interval() -> float:
 	return lerpf(nuclear_beep_near_seconds, maxf(nuclear_beep_near_seconds, nuclear_beep_far_seconds), fraction)
 
 func launch_raptor() -> int:
-	if raptor_cooldown_remaining > 0.0:
+	if raptor_ready_in() > 0.0:
 		return 0
 	var id := _spawn_raptor()
 	if id.is_empty():
@@ -2250,6 +2298,7 @@ func _update_raptors(delta: float) -> void:
 			if raptor.position.distance_to(launch_origin(raptor.lane)) <= 0.03:
 				removed.append(raptor.id)
 				raptors_returned += 1
+				_hold_after_landing("raptor")
 				_set_status("RAPTOR RECOVERED | SORTIE COMPLETE", 3.0)
 			continue
 		if raptor.phase == "launch":
@@ -2328,7 +2377,7 @@ func _fire_flak(base: Dictionary) -> String:
 func _update_special_projectiles(delta: float) -> void:
 	for projectile in contacts.duplicate():
 		if projectile.kind == "nuke":
-			projectile.position = projectile.position.move_toward(own_ship_position, nuclear_speed * nuke_speed_factor() * movement_speed * delta)
+			projectile.position = projectile.position.move_toward(own_ship_position, nuclear_speed * nuke_speed_factor() * (1.0 + float(projectile.get("speed_bonus", 0.0))) * movement_speed * delta)
 			if projectile.position.distance_to(own_ship_position) <= missile_impact_radius:
 				_remove_contact(projectile.id)
 				nuclear_hits += 1
@@ -2558,7 +2607,19 @@ func _update_auto_launch() -> void:
 		var raptors := count_kind("raptor")
 		var nukes := count_kind("nuke")
 		var wanted := mini(max_raptors, nukes) if nukes > 0 else (1 if count_kind("baseship") > 0 else 0)
-		if raptors < wanted and launch_raptor() > 0:
+		if auto_all_raptors_nukes > 0 and nukes >= auto_all_raptors_nukes and raptors < max_raptors:
+			# 1.1.0: several nukes on screen: every available Raptor launches at once.
+			# The launch cooldown is skipped; the landing pause still applies.
+			if raptor_recovery_remaining <= 0.0:
+				var sent := 0
+				while count_kind("raptor") < max_raptors and not _spawn_raptor().is_empty():
+					sent += 1
+				if sent > 0:
+					raptor_cooldown_remaining = maxf(1.0, raptor_launch_cooldown)
+					auto_raptor_launches += sent
+					auto_all_raptor_launches += 1
+					battle_event.emit("auto launch: all Raptors (%d) for %d nukes" % [sent, nukes])
+		elif raptors < wanted and launch_raptor() > 0:
 			auto_raptor_launches += 1
 
 func auto_firewall_holding() -> bool:
@@ -2942,7 +3003,7 @@ func hacking_warning() -> String:
 	if state == "":
 		return ""
 	if state == "approach":
-		return "HEAVY RAIDER APPROACHING\nBATTERY CANNOT STOP IT"
+		return "HEAVY RAIDER APPROACHING\nPREPARE FIREWALL DEFENSE"
 	var lines: Array[String] = []
 	var active := active_hackers()
 	if active > 0:
@@ -3776,3 +3837,74 @@ static func make_stealth_ready_sound() -> AudioStreamWAV:
 	stream.loop_mode = AudioStreamWAV.LOOP_DISABLED
 	stream.data = data
 	return stream
+
+# 1.1.0 LANDING PAUSE AND NUKE SPEED ------------------------------------------
+
+## Seconds until LAUNCH VIPERS is ready (the longer of the launch cooldown and the
+## landing pause).
+func viper_ready_in() -> float:
+	return maxf(launch_cooldown_remaining, viper_recovery_remaining)
+
+## Seconds until LAUNCH RAPTOR is ready (the longer of the launch cooldown and the
+## landing pause).
+func raptor_ready_in() -> float:
+	return maxf(raptor_cooldown_remaining, raptor_recovery_remaining)
+
+## A Viper or Raptor has landed: hold its launch button for the recovery time.
+## Each landing restarts the pause.
+func _hold_after_landing(kind: String) -> void:
+	if kind == "viper" and viper_recovery_seconds > 0.0:
+		viper_recovery_remaining = viper_recovery_seconds
+		viper_recovery_holds += 1
+	elif kind == "raptor" and raptor_recovery_seconds > 0.0:
+		raptor_recovery_remaining = raptor_recovery_seconds
+		raptor_recovery_holds += 1
+
+## Speed bonus for a new Basestar nuke: 0 to Nuke Speed Random Max, even on Easy and
+## Normal; on Hard the larger of two picks (leans to the top end).
+func nuke_speed_bonus() -> float:
+	var top := maxf(0.0, nuke_speed_random_max)
+	if top <= 0.0:
+		return 0.0
+	var pick := rng.randf()
+	if active_difficulty >= 2 and hard_nuke_speed_lean:
+		pick = maxf(pick, rng.randf())
+	return pick * top
+
+# 1.1.0 RAIDERS FOCUS FIRE ON A REVEALED STEALTH VIPER -------------------------
+
+## The Stealth Viper once it has fired (empty while hidden or not out).
+func revealed_stealth() -> Dictionary:
+	for contact in contacts:
+		if contact.kind == "stealth_viper" and contact.get("revealed", false):
+			return contact
+	return {}
+
+## Returns true when this Raider is busy with the Stealth Viper this frame. Each
+## Raider within Stealth Focus Range chases it for Stealth Pursuit Distance only,
+## shooting from Stealth Shot Range, then gives up and goes back to its job.
+func _raider_focus_stealth(raider: Dictionary, delta: float) -> bool:
+	var stealth := revealed_stealth()
+	if stealth.is_empty() or raider.get("stealth_done", "") == stealth.id:
+		return false
+	var gap: float = raider.position.distance_to(stealth.position)
+	if raider.get("stealth_chasing", "") != stealth.id:
+		if gap > stealth_focus_range:
+			return false
+		raider.stealth_chasing = stealth.id
+		raider.stealth_chased = 0.0
+		stealth_pursuits += 1
+	raider.stealth_shot_cooldown = maxf(0.0, raider.get("stealth_shot_cooldown", 0.0) - delta)
+	if gap <= stealth_shot_range and raider.stealth_shot_cooldown <= 0.0:
+		raider.stealth_shot_cooldown = maxf(0.3, stealth_shot_interval)
+		stealth_shots_taken += 1
+		if rng.randf() < clampf(stealth_hit_chance, 0.0, 1.0):
+			_lose_stealth(stealth)
+			raider.stealth_done = stealth.id
+			return true
+	var before: Vector3 = raider.position
+	_steer(raider, stealth.position, small_hostile_speed * 1.3, delta)
+	raider.stealth_chased += before.distance_to(raider.position)
+	if raider.stealth_chased >= stealth_pursuit_distance or gap > stealth_focus_range * 1.5:
+		raider.stealth_done = stealth.id
+	return true

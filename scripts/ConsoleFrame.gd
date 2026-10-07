@@ -114,14 +114,17 @@ func _draw_bonus_lines() -> void:
 
 func _draw_hack_box() -> void:
 	# Chamfered alert box around the hacking warning; flashes during a hack.
+	# 1.1.1: also shown (steady amber) while a Heavy Raider approaches.
 	var state: String = battle.hack_state()
-	if state == "" or state == "approach":
+	if state == "":
 		return
 	var alert: Label = get_parent().get_node("HackAlert")
 	var text_height := float(alert.get_line_count() * alert.get_line_height())
 	var r := Rect2(alert.position - Vector2(10, 8), Vector2(alert.size.x + 20, text_height + 16))
 	var blink: bool = int(battle.battle_time * 4.0) % 2 == 0
 	var color := Color(1.0, 0.2, 0.26) if blink or state == "draining" else Color(1.0, 0.78, 0.25)
+	if state == "approach":
+		color = Color(1.0, 0.78, 0.25)
 	var c := 10.0
 	var box := PackedVector2Array([r.position + Vector2(c,0), Vector2(r.end.x-c, r.position.y),
 		Vector2(r.end.x, r.position.y+c), r.end - Vector2(0,c), r.end - Vector2(c,0),

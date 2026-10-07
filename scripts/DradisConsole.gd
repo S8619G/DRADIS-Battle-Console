@@ -74,6 +74,12 @@ const SessionLog = preload("res://scripts/SessionLog.gd")
 ## 1.08: hovering or tapping a high-score entry shows its battle stats.
 @export var show_score_stats: bool = true
 
+@export_group("Battle Readout")
+## 1.1.0: the left-side readout lists enemies destroyed this battle (by every source),
+## then our losses. EMP CHARGES is the last line, in the EMP blast color
+## (Contacts > EMP Defense > Emp Color).
+@export_range(10, 24) var readout_font_size: int = 16
+
 var shown_score: float = 0.0
 var was_defeated: bool = false
 var entry_active: bool = false
@@ -128,6 +134,8 @@ var stats_box: PanelContainer
 var stats_label: Label
 var stats_row: int = -1
 var stats_pinned: bool = false
+## 1.1.0: EMP CHARGES line under the battle readout, in the EMP blast color.
+var emp_readout: Label
 
 func _ready() -> void:
 	tuning_panel.visible = false  # F1 opens tuning without obscuring the game HUD.
@@ -141,6 +149,7 @@ func _ready() -> void:
 	_apply_tooltip_setting(self)
 	$ShipStatus.emp_used.connect(func() -> void: log_event("EMP used | %d charge%s left" % [contacts.emp_charges, "" if contacts.emp_charges == 1 else "s"]))
 	_build_emp_split_button()
+	_build_emp_readout()
 	# Only when this console is the running game (not inside a test script).
 	call_deferred("_fit_window_on_start")
 
@@ -240,6 +249,7 @@ func _start_session_log() -> void:
 	contacts.wave_changed.connect(func(number: int) -> void: log_event("wave %d" % number))
 	contacts.ftl_offline_changed.connect(func(offline: bool) -> void: log_event("FTL %s | hull %d%%" % ["offline (hack breach)" if offline else "back online", roundi(contacts.hull)]))
 	contacts.stealth_event.connect(func(message: String) -> void: log_event(message))
+	contacts.battle_event.connect(func(message: String) -> void: log_event(message))
 	contacts.ftl_jumped.connect(func() -> void: log_event("FTL jump | hull %d%% | auto %s" % [roundi(contacts.hull), "yes" if contacts.auto_ftl else "no"]))
 
 ## 1.09: window focus changes go to the session log (for freeze reports).
@@ -428,12 +438,12 @@ func _center_title() -> void:
 func _process(delta: float) -> void:
 	sweep_loop.volume_db = sweep_volume_db
 	_update_score_display(delta)
-	var cooling: bool = contacts.launch_cooldown_remaining > 0.0
+	var cooling: bool = contacts.viper_ready_in() > 0.0
 	var full: bool = contacts.count_vipers() >= contacts.max_vipers
 	launch_button.disabled = cooling or full or contacts.is_defeated() or contacts.safe_remaining > 0.0
 	var viper_tag := "AUTO " if contacts.auto_launch_vipers else ""
 	if cooling:
-		launch_button.text = "LAUNCH VIPERS\n%sREADY IN %ds" % [viper_tag, ceili(contacts.launch_cooldown_remaining)]
+		launch_button.text = "LAUNCH VIPERS\n%sREADY IN %ds" % [viper_tag, ceili(contacts.viper_ready_in())]
 	elif full:
 		launch_button.text = "LAUNCH VIPERS\n%sALL DEPLOYED" % viper_tag
 	else:
@@ -471,13 +481,13 @@ func _process(delta: float) -> void:
 		firewall_button.text = "FIREWALL\n%sSTANDBY" % wall_tag
 	_tip(firewall_button, "Slows a Heavy Raider hack while deployed. Usable once a Heavy Raider starts hacking; used up in %d seconds, recharges in %d." % [int(contacts.firewall_seconds), int(contacts.firewall_recharge_seconds)])
 	_update_emp_split(shield)
-	raptor_button.disabled = contacts.is_defeated() or contacts.safe_remaining > 0.0 or contacts.raptor_cooldown_remaining > 0.0 or contacts.count_kind("raptor") >= contacts.max_raptors
+	raptor_button.disabled = contacts.is_defeated() or contacts.safe_remaining > 0.0 or contacts.raptor_ready_in() > 0.0 or contacts.count_kind("raptor") >= contacts.max_raptors
 	var raptor_tag := "AUTO " if contacts.auto_launch_raptors else ""
 	raptor_button.text = "LAUNCH RAPTOR\n%s1 PER LAUNCH" % raptor_tag
 	if contacts.count_kind("raptor") >= contacts.max_raptors:
 		raptor_button.text = "LAUNCH RAPTOR\n%sALL DEPLOYED" % raptor_tag
-	elif contacts.raptor_cooldown_remaining > 0.0:
-		raptor_button.text = "LAUNCH RAPTOR\n%sREADY IN %ds" % [raptor_tag, ceili(contacts.raptor_cooldown_remaining)]
+	elif contacts.raptor_ready_in() > 0.0:
+		raptor_button.text = "LAUNCH RAPTOR\n%sREADY IN %ds" % [raptor_tag, ceili(contacts.raptor_ready_in())]
 	_tip(raptor_button, "Launch one Raptor. Prioritizes nukes, then Heavy Raiders, then attacks Basestars with light missiles.")
 	repair_button.disabled = not contacts.can_rapid_repair()
 	var repair_tag := "AUTO " if contacts.auto_rapid_repair else ""
@@ -503,8 +513,7 @@ func _process(delta: float) -> void:
 	$HeaderMetrics/Vipers/Value.text = "%d / %d" % [contacts.count_vipers(),contacts.max_vipers]
 	$HeaderMetrics/Raptors/Value.text = "%d / %d" % [contacts.count_kind("raptor"),contacts.max_raptors]
 	$HeaderMetrics/Basestars/Value.text = str(contacts.count_kind("baseship"))
-	battle_readout.text = "INCOMING MISSILES  %d\nHEAVY RAIDERS  %d\nVIPERS RETURNING  %d\nVIPERS LOST  %d\nRAPTORS LOST  %d\nBASESTARS DESTROYED  %d\nEMP CHARGES  %d" % [
-		contacts.count_kind("missile"), contacts.count_kind("heavy_raider"), contacts.count_returning("viper"), contacts.vipers_lost, contacts.raptors_lost, contacts.basestars_destroyed, contacts.emp_charges]
+	_update_battle_readout()
 	$HackAlert.text = contacts.hacking_warning()
 	$HackAlert.visible = not $HackAlert.text.is_empty()
 	var hack_state: String = contacts.hack_state()
@@ -1085,3 +1094,31 @@ func _on_launch_vipers_pressed() -> void:
 
 func _on_launch_raptor_pressed() -> void:
 	print("[RAPTORS] Launched ", contacts.launch_raptor(), "; active=", contacts.count_kind("raptor"))
+
+# ------------------------------------------------------------------
+# 1.1.0 battle readout (left side): destroyed totals from every source, our
+# losses, then EMP CHARGES in the EMP blast color.
+# ------------------------------------------------------------------
+func readout_text() -> String:
+	var k: Dictionary = contacts.battle_stats()
+	return "RAIDERS DESTROYED  %d\nHEAVY RAIDERS DESTROYED  %d\nMISSILES DESTROYED  %d\nNUKES DESTROYED  %d\nBASESTARS DESTROYED  %d\nRESURRECTION SHIPS DESTROYED  %d\nVIPERS LOST  %d\nRAPTORS LOST  %d\nSTEALTH VIPERS LOST  %d" % [
+		k.raider, k.heavy_raider, k.missile, k.nuke, k.baseship, k.resurrection_ship,
+		contacts.vipers_lost, contacts.raptors_lost, contacts.stealth_lost]
+
+func _build_emp_readout() -> void:
+	battle_readout.add_theme_font_size_override("font_size", readout_font_size)
+	emp_readout = Label.new()
+	emp_readout.name = "EmpReadout"
+	emp_readout.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	emp_readout.add_theme_font_size_override("font_size", readout_font_size)
+	battle_readout.add_child(emp_readout)
+	_update_battle_readout()
+
+func _update_battle_readout() -> void:
+	battle_readout.text = readout_text()
+	if not is_instance_valid(emp_readout):
+		return
+	emp_readout.text = "EMP CHARGES  %d" % contacts.emp_charges
+	emp_readout.add_theme_color_override("font_color", contacts.emp_color)
+	emp_readout.position = Vector2(0.0, battle_readout.get_line_height() * battle_readout.get_line_count()
+		+ battle_readout.get_theme_constant("line_spacing") * battle_readout.get_line_count())

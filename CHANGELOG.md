@@ -2,6 +2,29 @@
 
 Functional changes in each version, newest first. Earlier development-stage notes are in `docs/history/`.
 
+## 1.1.1 (2026-10-07)
+
+Builds on DRADIS Battle Console 1.1.0.
+
+### Changed
+
+- Heavy Raider warning box: moved from the bottom of the left panel to the left of the ship outline, below the battle readout, so it no longer covers STEALTH VIPERS LOST and EMP CHARGES. It is hidden until a Heavy Raider is on its way. During the approach it shows HEAVY RAIDER APPROACHING / PREPARE FIREWALL DEFENSE in a steady amber box (previously the text had no box). When the hack starts, the hacking lines appear in the same box, which flashes as before. Text size 17 (was 19) so the longest five-line warning fits above the buttons. Inspector: DradisConsole scene > HackAlert.
+- Approach wording: BATTERY CANNOT STOP IT is now PREPARE FIREWALL DEFENSE.
+- Version 1.1.1 in the project and both export presets.
+
+## 1.1.0 (2026-10-06)
+
+Builds on DRADIS Battle Console 1.09. Not released separately; included in 1.1.1. From this release, versions use three parts (1.1.0, then 1.1.1, and so on).
+
+### Changed
+
+- Left-side battle readout: it now lists enemies destroyed this battle by every source (ship missiles, Vipers, Raptors, the Defense Battery and the Stealth Viper): RAIDERS, HEAVY RAIDERS, MISSILES, NUKES, BASESTARS and RESURRECTION SHIPS DESTROYED. Then come our losses (VIPERS LOST, RAPTORS LOST, STEALTH VIPERS LOST), and EMP CHARGES is the last line, in the EMP blast color. Changing Contacts > EMP Defense > Emp Color changes both. INCOMING MISSILES, HEAVY RAIDERS (active) and VIPERS RETURNING were removed. Font size: DradisConsole > Battle Readout > Readout Font Size (16).
+- Landing pause: after a Viper lands, LAUNCH VIPERS waits 3 seconds, and after a Raptor lands, LAUNCH RAPTOR waits 5 seconds. Each landing restarts the pause, so the button unlocks 3 seconds after the last Viper of a group lands. If the launch cooldown is longer, the longer one wins. The button shows its usual READY IN countdown. Auto Launch waits too. Inspector: Contacts > Viper Launch > Viper Recovery Seconds (3); Contacts > Raptors > Raptor Recovery Seconds (5); 0 turns a pause off.
+- Stealth Viper: once it has fired, every Raider within 0.40 of it turns on it. Each Raider chases it for a short distance (0.25), shooting from up to 0.30 once every 1.5 seconds, then gives up and goes back to its job. One hit still destroys it. The hit chance was tuned in long test battles so that about one run in four is lost. Basestar flak still targets only Raptors. Inspector: Contacts > Stealth Viper > Stealth Focus Range, Stealth Pursuit Distance, Stealth Shot Range, Stealth Shot Interval, Stealth Hit Chance.
+- Nuke speed: each Basestar nuke gets its own random speed bonus when it launches, from 0% to 8% faster than the usual speed for the difficulty (Hard is still 1.6x). Easy and Normal spread evenly; on Hard the bonus leans to the top end (about 5.3% on average). Each nuke's bonus goes in the session log. Inspector: Contacts > Nuclear Threat > Nuke Speed Random Max (0.08), Hard Nuke Speed Lean (on).
+- Auto Launch Raptors: with 2 or more nukes on screen, every available Raptor launches at once, without waiting for the launch cooldown. The landing pause still applies. Manual LAUNCH RAPTOR is unchanged. Inspector: Contacts > Automation > Auto All Raptors Nukes (2; 0 turns it off).
+- Version 1.1.0 in the project and both export presets.
+
 ## 1.09 (2026-10-06)
 
 Builds on DRADIS Battle Console 1.08.
