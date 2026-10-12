@@ -10,7 +10,9 @@ A tactical defense game for Windows (x64 and arm64) and Mac (Apple M-series and 
 
 - An animated 3D DRADIS dome with a 2-second sweep pulse and original synthesized audio.
 - Friendly (green) and hostile (red) contacts with authentic-style icons. Unknown contacts are identified as they approach.
-- Threat waves every 2 minutes, with more Basestars, faster launches and more Heavy Raiders.
+- Defined waves in sets of five, from a Probe to a Major engagement with the Resurrection Ship, with wave traits, a new Cylon tactic each set, a rising score multiplier and Systems Bonuses.
+- Protect the fleet after each Major engagement: Vipers defend civilian ships from Raiders.
+- A console frame around the scope with corner panels, ready lights, an alert box, NAV DATA and a HULL gauge.
 - Viper squadrons that split up to engage and rejoin when the area is clear.
 - Raptors for nuclear missiles and Basestars, ship missiles that change target, a defense battery for close missiles, and a firewall and EMP against Heavy Raider hacking.
 - A Stealth Viper with two nuclear missiles on Normal and Hard: when 3 or more large ships are on the scope, the top nacelle of the ship becomes a blue STEALTH WEAPON button.

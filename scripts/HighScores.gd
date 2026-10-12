@@ -16,6 +16,10 @@ static func clean_stats(raw: Variant) -> Dictionary:
 	for kind in STAT_KINDS:
 		if raw.has(kind):
 			stats[kind] = maxi(0, int(raw[kind]))
+	# 1.2.0: defined-wave progress, when the entry has it.
+	for key in ["waves_cleared", "sets"]:
+		if not stats.is_empty() and raw.has(key):
+			stats[key] = maxi(0, int(raw[key]))
 	return stats
 
 static func clean_initials(text: String) -> String:

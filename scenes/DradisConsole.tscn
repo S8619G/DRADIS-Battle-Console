@@ -114,6 +114,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 script = ExtResource("6_frame")
+console_layout_v2 = true
 
 [node name="CenterContainer" type="CenterContainer" parent="." unique_id=915203150]
 layout_mode = 1
@@ -133,7 +134,12 @@ ring_color = Color(0.3254902, 0.34117648, 1, 1)
 ring_thickness = 0.4
 ring_glow_thickness = 5.0
 ring_rotation_seconds = 4.0
+ring_horizontal_hinge_front_back = true
+ring_trail_enabled = true
+scanlines_inside_scope = true
 ripple_color = Color(0.3254902, 0.6862745, 1, 1)
+ripple_max_radius = 320.0
+ripples_match_ring_plane = true
 
 [node name="Contacts" type="Control" parent="CenterContainer/Dome"]
 layout_mode = 1
@@ -144,6 +150,11 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("4_contacts")
+keep_play_in_wedge = true
+civilian_size_toughness = true
+civilian_evasion = true
+protect_patrol_vipers = 1
+protect_jump_in_hold = 2.0
 
 [node name="GameOverPanel" type="Panel" parent="CenterContainer/Dome"]
 visible = false

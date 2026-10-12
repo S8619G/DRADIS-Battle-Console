@@ -1,4 +1,4 @@
-# DRADIS Battle Console 1.1.1 User Guide
+# DRADIS Battle Console 1.2.6 User Guide
 
 This is the full guide that ships with the editable project. In the GitHub repository it lives in `docs/`, the per-version changelogs are combined in `CHANGELOG.md`, and the `references` folder is not included.
 
@@ -6,7 +6,58 @@ This is the full guide that ships with the editable project. In the GitHub repos
 
 DRADIS Battle Console is an unofficial, non-commercial fan project and is not affiliated with or endorsed by the owners of Battlestar Galactica. See `NOTICE.md` at the top of the repository for the full disclaimer and the photosensitivity warning.
 
-This complete, editable project is version 1.1.1 of DRADIS Battle Console, a full build. Versions use three parts (1.1.0, 1.1.1, and so on). 1.1.1 moves the Heavy Raider warning box beside the ship outline so it no longer covers the battle readout; everything else is as in 1.1.0. It runs on Windows PCs with Intel or AMD processors (x64), Windows PCs with ARM processors (arm64), and Macs with Apple M-series chips or Intel processors (one Universal Mac app). It builds on 1.09 (Stealth Viper, ANGLE on Qualcomm GPUs, full difficulty names on the score table), 1.08 (FTL offline during a breach, a Viper on the Resurrection Ship, high-score battle stats, BEST score, Settings links), 1.07 (split FIREWALL | EMP button, enemy missile pulse, missiles that change target, short tags, squadrons that split and rejoin), 1.06 (EMP defense, Rapid Repair sound and glow), 1.05 (battery kill points, the Double Missile bonus, the session log), 1.04 (explosions, speed by difficulty, Auto Rapid Repair, Remember Settings), 1.03 (auto launch, auto FTL, FTL flash, Quit, window fit), 1.02 (multi-hit nukes, Viper squadrons) and 1.01 (Settings, volumes, difficulty, auto battery and firewall). Version 1.1.0 adds:
+This complete, editable project is version 1.2.6 of DRADIS Battle Console, a full build. Versions use three parts (1.2.5, 1.2.6, and so on). 1.2.6 keeps the rolling scanlines inside the scope outline, so they no longer shimmer over the console panels, and draws the alert box outline in the panel colour instead of amber. 1.2.5 makes Protect the fleet fairer (sturdier large ships, smaller ships that evade, a Viper already on patrol and a short Raider jump-in) and gives the console a new layout with ready lights, an alert box and NAV DATA in the corner panels. 1.2.4 brings the scope closer to the show: the orbital rings turn on a front-to-back hinge with a soft trail, the pulse rings lie on the ring plane, and a scope outline with magenta corner panels frames the dome. 1.2.3 makes the Raiders in Protect the fleet tougher and has the ship's missiles fire at hacking Heavy Raiders again. 1.2.2 replaces the bonus sweep with **Protect the fleet**, a round where Vipers defend civilian ships from Raiders, and makes Systems Bonuses rarer but stronger as the battle goes on. 1.2.1 made the battle harder: enemies are tougher but fewer, nukes take more hits, and the ship's own missiles are a last line of defense. 1.2.0 gave the battle defined waves: each wave is one Cylon attack that ends when its Basestars are destroyed, followed by a short rest, a tally and a Systems Bonus. It also keeps the Heavy Raider warning box one fixed size. It runs on Windows PCs with Intel or AMD processors (x64), Windows PCs with ARM processors (arm64), and Macs with Apple M-series chips or Intel processors (one Universal Mac app). It builds on 1.09 (Stealth Viper, ANGLE on Qualcomm GPUs, full difficulty names on the score table), 1.08 (FTL offline during a breach, a Viper on the Resurrection Ship, high-score battle stats, BEST score, Settings links), 1.07 (split FIREWALL | EMP button, enemy missile pulse, missiles that change target, short tags, squadrons that split and rejoin), 1.06 (EMP defense, Rapid Repair sound and glow), 1.05 (battery kill points, the Double Missile bonus, the session log), 1.04 (explosions, speed by difficulty, Auto Rapid Repair, Remember Settings), 1.03 (auto launch, auto FTL, FTL flash, Quit, window fit), 1.02 (multi-hit nukes, Viper squadrons) and 1.01 (Settings, volumes, difficulty, auto battery and firewall), with 1.1.1 (Heavy Raider warning box beside the ship outline). Version 1.2.6 changes (see **Console layout (1.2.5)** below):
+
+- **Scanlines inside the scope**: the rolling CRT scanlines are drawn only across the scope outline, so they no longer shimmer over the corner panels, top tabs and NAV DATA box. **Dome > Scanlines > Scanlines Inside Scope** (on; off gives the 1.2.5 scanlines).
+- **Alert box outline**: while a Heavy Raider approaches or hacks, the alert box outline uses the normal panel outline colour instead of amber. The amber warning text, and the red outline while hacking blinks or after a breach, are unchanged.
+
+Version 1.2.5 changes (see **Protect the fleet** and **Console layout (1.2.5)** below):
+
+- **Sturdier large ships** in Protect the fleet: the large civilian ship lasts 2 times as long, medium ships 1.2 times, small ships as before.
+- **Evasion**: small and medium civilian ships move away from nearby Raiders, weaving and bending toward Galactica, and always stay inside the scope outline. Large ships hold position.
+- **Patrol Viper**: one Viper is already with the fleet when the round starts.
+- **Raider jump-in**: each Raider holds for 2 seconds where it jumps in, fading up from dim, before it attacks. Vipers can engage it while it holds.
+- **Console layout**: taller corner panels with eye-level ready lights (VIPERS, RAPTOR, FTL, DEFENSES) that mirror the bottom buttons, the Heavy Raider warnings in an alert box in the left panel (ALERT STATUS when quiet), a NAV DATA box in the right panel, the status message in its own box, wider top tabs, a HULL gauge that turns red at 30%, a live TRACKS count and a DEFENSE BATTERY scale. The thin rectangle around the scope is removed, and the bottom buttons are centred between their lines.
+
+Version 1.2.4 changes (see **Scope look (1.2.4)** below):
+
+- **Ring trail**: each orbital ring leaves a soft trail of faint glow copies behind it. The overall ring light is unchanged; the rings stay quiet.
+- **Scope outline**: a thin magenta arc over the top with small inward range ticks, and a V down to the button bar, clear of the ship and the dome. The plain line under the dome is gone. Under the status line the arc has a gap.
+- **Corner panels**: magenta panels with tabs and bar readouts beside the V, and three tabs in each top corner. They are decoration only. A few bar readouts slowly step and one slowly fades; never fast and never brighter.
+- **Play inside the wedge**: contacts are kept inside the scope outline. In 1.2.3 play they already stayed inside, so battles play the same.
+- **Ring hinge**: the horizontal ring is hinged at the front and back of the dome and seen from 30 degrees above. It turns all the way over in the reverse direction on the same 4-second clock. The vertical ring is unchanged; the two rings are at right angles at each quarter turn.
+- **Pulse rings on the ring plane**: the base-plane pulse rings are centred on the dome and lie on the flat ring's plane. The outer pulse stops at the ring's edge.
+
+Version 1.2.3 changes:
+
+- **Tougher Raiders in Protect the fleet** (that round only): 4 Viper hits after set 1, 1 more per later set up to 6; they fire back (about 1 Viper lost per 6 Raiders); they arrive 3 at a time, 1 second apart; and they destroy civilian ships 10% faster per set, down to 10 seconds. See **Protect the fleet** below.
+- **Ship missiles at hacking Heavy Raiders**: right after nukes in their last quarter, ship missiles go for a Heavy Raider that is hacking or draining the ship. Since 1.2.1 these were out of the 0.15 range and never targeted.
+
+Version 1.2.2 changes:
+
+- **Protect the fleet** after each Major engagement, in place of the bonus sweep. The scope is cleared and 2 to 4 civilian ships appear in blue. Only Raiders attack, and they go for the civilians. Defend them with Vipers only. See **Protect the fleet** below.
+- **Systems Bonus schedule**: no bonus in the first set (waves 1 to 5). From wave 6 each cleared wave has a 40% chance of a bonus, and the end of every set always gives one. Bonuses grow stronger by set: low in set 2, medium in sets 3 and 4, high from set 5. Hard starts one set later at half the chance. A wave with no bonus shows **NO SYSTEMS BONUS** in the tally.
+- **No wasted FREE AUTO BATTERY**: it is never offered while AUTO DEFENSE BATTERY is already on. Another bonus is drawn instead.
+- **Tougher Basestars**: 11 hits on Normal (was 10) and 15 on Hard (was 13). Easy stays at 7.
+- **Faster nukes**: the base speed is 6% higher (Nuclear Speed 0.058, was 0.055). The 0 to 8% random bonus and the Hard lean are unchanged.
+- **Raptors fire a little slower at nukes**: 0.7 seconds between hits (was 0.6). One Raptor needs about 3.5 s per nuke on Normal (was about 3 s), 2.1 s on Easy and 4.9 s on Hard.
+- **Thicker wave tally border** (3 pixels, was 1), adjustable in the Inspector.
+
+Version 1.2.1 changes:
+
+- **Tougher, fewer enemies**: Basestars take 10 hits (Easy 7, Hard 13; was 6), Heavy Raiders 5 (Easy 3, Hard 7; was 3), and a Raider needs 2 Viper hits. Waves 3 to 5 bring one Basestar fewer, and Heavy Raiders launch every 28 seconds per Basestar (was 22).
+- **Tougher nukes**: 6 hits (Easy 4, Hard 8; was 3). Raptors fire at the same rate, so they need about 3 seconds per nuke.
+- **Last-ditch ship missiles**: they go for a nuke only in the last quarter of its flight (was the last half) and for a Heavy Raider only when it is very close (0.15, was 0.30). Reload 8 seconds (was 6). From 1.2.3 a Heavy Raider that is hacking or draining the ship is targeted at any distance, right after nukes.
+
+Version 1.2.0 added:
+
+- **Defined waves**: a wave is one Cylon attack with a set number of Basestars. Destroy them all to clear the wave; a short rest follows (Easy 10 s, Normal 7 s, Hard 5 s). See **Threat waves** below.
+- **Sets of five**: Probe, Strike, Assault, Pressure and Major engagement (with the Resurrection Ship). Waves 3 and 4 add a trait; each new set adds one permanent Cylon tactic and +0.25x to the score (up to 3x).
+- **Bonus sweep** after each Major engagement: Raiders cross without firing. Destroy them all for a PERFECT bonus.
+- **Systems Bonus** for each wave survived, chosen at random.
+- **Fixed Heavy Raider box**: the warning box keeps one size and place; HEAVY RAIDER APPROACHING is centred in it until the hack starts.
+
+Version 1.1.0 added:
 
 - **Battle readout (left side)**: enemies destroyed this battle by every source, then our losses, then EMP CHARGES in EMP blue. See **Battle readout** below.
 - **Landing pause**: LAUNCH VIPERS waits 3 seconds after a Viper lands, and LAUNCH RAPTOR waits 5 seconds after a Raptor lands.
@@ -16,9 +67,9 @@ This complete, editable project is version 1.1.1 of DRADIS Battle Console, a ful
 
 ## Import on Mac
 
-1. Extract `DRADIS_Battle_Console_1.1.1_2026-10-07.zip` into a new location. Keep the existing working project as a backup.
+1. Extract `DRADIS_Battle_Console_1.2.6_2026-10-12.zip` into a new location. Keep the existing working project as a backup.
 2. In Godot 4.7 Project Manager, choose **Import**.
-3. Select `project.godot` inside `DRADIS_Battle_Console_1.1.1`. The project now appears as **DRADIS Battle Console**.
+3. Select `project.godot` inside `DRADIS_Battle_Console_1.2.6`. The project now appears as **DRADIS Battle Console**.
 4. Open the project, let importing finish, and press F5 or click Run Project.
 5. The tuning panel starts hidden. Press F1 to show/hide it; some Mac keyboards require Fn-F1.
 
@@ -31,15 +82,15 @@ Export templates for Godot 4.7 must be installed once (**Editor > Manage Export 
 ### Windows
 
 1. Open **Project > Export** and select the **Windows Desktop** preset: x86_64, one single .exe with the game inside, no extra console window, and DRADIS Battle Console in the file details.
-2. Click **Export Project**, keep the name `DRADIS_Battle_Console_1.1.1_Windows_x64.exe`, untick **Export With Debug**, and click **Save**.
+2. Click **Export Project**, keep the name `DRADIS_Battle_Console_1.2.6_Windows_x64.exe`, untick **Export With Debug**, and click **Save**.
 3. For a Windows on ARM laptop, change **Architecture** to arm64 in the same preset, export with a name ending `_Windows_arm64.exe`, and set it back to x86_64 afterwards.
 4. Windows may show "Windows protected your PC" the first time because the .exe is not code-signed. Click **More info**, then **Run anyway**.
 
 ### Mac (DMG)
 
-1. Open **Project > Export** and select the **macOS** preset: Universal (Apple Silicon and Intel), bundle identifier `com.dradisbattleconsole.game`, version 1.1.1, built-in ad-hoc signing and no notarization.
+1. Open **Project > Export** and select the **macOS** preset: Universal (Apple Silicon and Intel), bundle identifier `com.dradisbattleconsole.game`, version 1.2.6, built-in ad-hoc signing and no notarization.
 2. The two yellow warnings from the earlier build are handled: ETC2 ASTC texture import is switched on in Project Settings (required for a Universal Mac build), and code signing is set to ad-hoc. A remaining warning about notarization is expected; notarization requires a paid Apple Developer account and is not needed for personal testing.
-3. Click **Export Project**, keep the name `DRADIS_Battle_Console_1.1.1_Mac.dmg`, untick **Export With Debug**, and click **Save**.
+3. Click **Export Project**, keep the name `DRADIS_Battle_Console_1.2.6_Mac.dmg`, untick **Export With Debug**, and click **Save**.
 4. Open the DMG and drag the app to Applications. The first time, macOS may say it cannot check the app for malicious software. Close that message, open **System Settings > Privacy & Security**, scroll down, and click **Open Anyway** next to DRADIS Battle Console. After that it opens normally.
 
 Notes:
@@ -62,7 +113,7 @@ The gear icon at the top right, just left of SCORE, opens **SETTINGS**. Mouse, t
 - **AUTO RAPID REPAIR**: when ON, a repair charge is used by itself as soon as the hull is at 50% or less, if a charge is available and no repair is running. It follows the normal repair rules (+25% over 5 seconds per charge). The RAPID REPAIR button shows AUTO and still works by hand. With AUTO FTL JUMP also on, the repair normally happens long before the hull falls below 10%.
 - **REMEMBER SETTINGS**: ON (the default) keeps every choice for the next start, as before. OFF makes the next start return to NORMAL with every auto option off; volumes, mutes and this switch itself are kept either way.
 - **DEFAULTS** (beside REMEMBER SETTINGS; called RESET TO DEFAULTS before 1.05) puts every setting back to its default straight away: volumes 50% and 100%, nothing muted, NORMAL, all auto options off. It asks once more (**CONFIRM**); press again within 3 seconds. The REMEMBER SETTINGS choice and the high scores are not affected.
-- The small dim text centered at the bottom shows the build, for example **DRADIS BATTLE CONSOLE 1.1.1**. From 1.08 it is a link to the project's GitHub page (https://github.com/S8619G/DRADIS-Battle-Console), which opens in the web browser. The address is **DradisConsole > Diagnostic Log > Github Url** in the Inspector.
+- The small dim text centered at the bottom shows the build, for example **DRADIS BATTLE CONSOLE 1.2.6**. From 1.08 it is a link to the project's GitHub page (https://github.com/S8619G/DRADIS-Battle-Console), which opens in the web browser. The address is **DradisConsole > Diagnostic Log > Github Url** in the Inspector.
 - Just right of it, a small round **!** opens the game's app data folder in Finder or Explorer. The session logs are in its **logs** folder (see Diagnostic log); the settings and high-score files are there too. It underlines and brightens while the mouse is over it.
 - The number in the build text comes from **Project Settings > Application > Config > Version**, so it updates with each build. **DradisConsole > Build > Test Build** (off from 1.06) adds "TEST" for a trial copy.
 - **QUIT** (bottom left) closes the game. It asks once more (**CONFIRM QUIT**); press again within 3 seconds to quit. Settings are saved first.
@@ -158,7 +209,7 @@ Every FTL jump, manual or automatic, plays a short animation:
 ## Nuclear missiles take several Raptor hits
 
 A Raptor has to stay with a nuke to destroy it:
-- It takes 3 hits on NORMAL, 2 on EASY and 4 on HARD, with 0.6 seconds between hits, about 1.2 seconds of chase on NORMAL.
+- It takes 6 hits on NORMAL, 4 on EASY and 8 on HARD (1.2.1; was 3, 2 and 4), with 0.7 seconds between hits (1.2.2; was 0.6): about 3.5 seconds of chase on NORMAL, 2.1 on EASY and 4.9 on HARD.
 - After the first hit, the label above the warhead shows its remaining strength, for example **NUCLEAR 67%**.
 - The status line reports each hit.
 
@@ -181,6 +232,25 @@ Vipers flying close together are shown as one **VIPERS x2** contact (or x3 and m
 The lower-left **DRADIS -20 dB** and lower-right **F1 TUNING PANEL** labels and the F1 tuning panel are development aids. From 1.04 they are **off by default**. To use them, open `scenes/DradisConsole.tscn`, click the top **DradisConsole** node, tick **Build > Development Build** in the Inspector and save (Cmd-S). Untick it and save again before exporting a copy for others.
 
 This README is the current guide. Older start guides and changelogs are retained as history and may describe superseded mechanics.
+
+## Scope look (1.2.4)
+
+- Every new look has its own switch, so each can be turned off on its own. Turning **Ring Horizontal Hinge Front Back**, **Ring Trail Enabled** and **Ripples Match Ring Plane** off, and setting **Ripple Max Radius** back to 340, gives the 1.2.3 dome.
+- The dome values are on **DradisConsole > CenterContainer > Dome** (groups **Ring Hinge**, **Ring Trail** and **Ripples**). Keep the rings quiet: the trail values share the ring's existing light rather than adding to it.
+- The outline and panels are on **DradisConsole > ConsoleFrame** (groups **Scope Frame** and **Panel Animation**). Unticking **Scope Frame Visible** gives the 1.2.3 frame, with its line under the dome. They follow the dome's Sphere Radius and are drawn under the contacts and the rings.
+- **Keep Play In Wedge** is on **Contacts** (group **Keep Play In Wedge**). A contact that has been inside the outline and drifts out is moved back just inside (Wedge Margin 0.06 of the sphere radius) and stops moving outward. Contacts that start outside fly in as before. Untick it for the 1.2.3 open scope.
+- The Heavy Raider warning box sits over the left corner panel; the panel is hidden behind it so the warning reads exactly as before.
+
+## Console layout (1.2.5)
+
+- **Console Layout V2** (on **DradisConsole > ConsoleFrame**, group **Console Layout 2**) turns the 1.2.5 layout on. Untick it for the 1.2.4 layout.
+- The corner panels reach up beside the scope. Their inner edges continue the V and every tab, light and box keeps the same gap to the scope.
+- Ready lights at eye level: VIPERS and RAPTOR on the left, FTL and DEFENSES on the right. Each is bright when its bottom button is ready and dim when it is not. They are lights only and cannot be clicked.
+- The alert box in the left panel always shows. It reads ALERT STATUS when quiet and fills with the Heavy Raider warnings (amber while one approaches, flashing red while hacking or draining). From 1.2.6 the box outline stays in the panel colour where it was amber; the text stays amber, and the outline still blinks red while hacking and turns red after a breach.
+- The NAV DATA box in the right panel shows made-up information about the area of space: sector, coordinates, nearest star, planets, one local condition and the jump count. It changes at the start of each battle and after each FTL jump, and stays still in between. **Nav Data Panel** turns it off.
+- The left gauge is the ship's hull (HULL) and turns red at **Hull Low Percent** (30%) or less. With **Live Readouts**, TRACKS shows the number of contacts and the right scale shows the Defense Battery charge.
+- From 1.2.6 the rolling scanlines are drawn only inside the scope outline (**Dome > Scanlines > Scanlines Inside Scope**), so the panels, tabs and boxes stay still.
+- The status message has its own box, and the six top tabs are lower and wider, reaching to the scope. The thin rectangle around the scope is removed; the line above the bottom buttons stays. The bottom buttons are centred between that line and the frame bottom.
 
 ## Header and ship outline
 
@@ -205,7 +275,7 @@ A special Viper with two nuclear missiles, for battles with many capital ships.
 - **When it is offered**: only on Normal and Hard (never on Easy), while 3 or more large ships (Basestars and the Resurrection Ship) are on the scope and the Stealth Viper is home and ready. Then the top nacelle of the ship (the part above the middle) turns blue with **STEALTH WEAPON**, pulsing gently, and a bright chime plays once. At any other time the nacelle looks normal and follows the hull color.
 - **Launch**: click or tap the blue nacelle. Manual only; no auto option launches it. Once it is out, the nacelle goes back to normal.
 - **On the scope**: a Viper icon tagged **STEALTH**. It flies about twice as fast as a Viper and blinks rapidly while the enemy cannot see it.
-- **Attack**: it heads for the nearest large ship and fires its two nukes 4 seconds apart. Each nuke does 3 of a Basestar's 6 hits, so both destroy a Basestar; on a Resurrection Ship each takes 5 of its 10 hits. Destroyed ships give their normal points. If its target is destroyed first, the next nuke goes to the nearest other large ship. If the number of large ships drops below 3, it still finishes its run.
+- **Attack**: it heads for the nearest large ship and fires its two nukes 4 seconds apart. Each nuke does half of a Basestar's hits, so both destroy a Basestar; on a Resurrection Ship each takes 5 of its 10 hits. Destroyed ships give their normal points. If its target is destroyed first, the next nuke goes to the nearest other large ship. If the number of large ships drops below 3, it still finishes its run.
 - **After firing**: the enemy can see it. It stops blinking and flies home. It is more fragile than a Viper: one Raider hit destroys it. From 1.1.0, every Raider within 0.40 of it turns on it, chases it a short way (0.25) and shoots at it from up to 0.30, once every 1.5 seconds, then gives up and goes back to its job. Its speed is still its main protection; about one run in four is lost. Basestar flak does not target it.
 - **Rearm and rebuild**: after a safe landing it is ready again 60 seconds later. If it is destroyed, a new one takes 3 minutes on Normal or 4 minutes on Hard. Both happen quietly, with no message or timer; the blue nacelle and the chime show when it is back. An FTL jump brings it home (it then rearms). Retry starts a battle with it ready.
 - **Log**: availability, launch, each nuke, loss and return are written to the session log.
@@ -273,7 +343,7 @@ Vipers and Raptors can be destroyed in battle.
 
 - **Raptors are armored:** 7 hits to destroy, and they still dodge 75% of incoming fire (Basestar flak and Raider attacks).
 - **Vipers are lighter but nimble:** 2 hits to destroy, and they dodge 20% of Raider fire by maneuvering.
-- For comparison, a Raider is destroyed by 1 hit and a Heavy Raider by 3.
+- For comparison, a Raider is destroyed by 2 Viper hits and a Heavy Raider by 5 (1.2.1).
 - Raiders attack nearby Vipers and Raptors on patrol. Each attack has a 50% chance to hit before the target's dodge chance.
 - In test battles with the same play pattern, about 5 Vipers and fewer than 2 Raptors were lost per 10 minutes. Before this change it was about 2 Vipers and 10 Raptors, mostly to Basestar flak.
 - Returning Vipers are still easy prey: each Raider attack has a 50% chance to destroy one.
@@ -298,17 +368,84 @@ Press **F11** to switch to full screen and F11 again to return to the window. **
 
 ## Threat waves
 
-Enemy activity rises every 2 minutes. The right sidebar shows **THREAT WAVE**, the current wave and **NEXT WAVE IN m:ss**, and the status line announces each new wave.
+From 1.2.0 a wave is one Cylon attack, not a stretch of time. The right sidebar shows **THREAT WAVE**, **WAVE n**, then the set and how many Basestars are still to destroy (**SET 1 | BASESTARS LEFT 3**), and on a smaller amber line the wave name, any trait and the set multiplier.
 
-| Wave | Basestars at once | Launch intervals | Heavy Raiders at once |
-|---:|---:|---:|---:|
-| 1 | 2 | normal | 2 |
-| 2 | 2 | 90% | 2 |
-| 3 | 3 | 80% | 2 |
-| 4 | 3 | 70% | 3 |
-| 5 and later | 4 | 60% (fastest) | 3 |
+Each wave runs in the same order:
 
-Shorter launch intervals mean Basestars launch Raiders and missiles more often. Extra Basestars in later waves take a nearer second row, so their missiles arrive a little sooner. FTL keeps the current wave; Retry starts again at wave 1.
+1. **Assault**: the status line names the wave and its Cylon force (for example **WAVE 2 | STRIKE | 3 BASESTARS**). Its Basestars arrive one after another, never more on the scope at once than the table allows.
+2. **Cleared**: when the last Basestar (and, in a Major engagement, the Resurrection Ship) is destroyed, the remaining Raiders and Heavy Raiders jump away. Missiles already in flight still come in. A soft two-note cue plays.
+3. **Rest**: a tally panel in the lower scope shows the wave bonus, the Systems Bonus (or NO SYSTEMS BONUS) and what comes next. Rest lasts 10 s on Easy, 7 s on Normal and 5 s on Hard. For the last 3 seconds the status line reads **WAVE n INBOUND** and three low horn pulses play.
+
+| Wave in set | Name | Easy | Normal | Hard | Basestars at once | Heavy Raiders at once | Launch intervals |
+|---:|---|---:|---:|---:|---:|---:|---:|
+| 1 | Probe | 2 | 2 | 2 | 2 | 1 | normal |
+| 2 | Strike | 2 | 3 | 3 | 2 | 2 | 95% |
+| 3 | Assault | 2 | 2 | 3 | 3 | 2 | 90% |
+| 4 | Pressure | 2 | 3 | 3 | 3 | 2 | 85% |
+| 5 | Major engagement | 2 | 3 | 3 | 4 | 3 | 80% |
+
+The Easy, Normal and Hard columns are the Basestars to destroy (1.2.1: one fewer in waves 3 to 5 than in 1.2.0, because each Basestar now takes more hits: 11 on Normal from 1.2.2). The Major engagement also brings the Resurrection Ship 20 seconds in; it no longer appears at random. If a wave runs 5 minutes no more Basestars arrive, so it always ends.
+
+**Traits** (waves 3 and 4 on Normal; waves 2 to 4 on Hard; Easy has none in the first set). Each is announced at the start of the wave and never repeats within a set:
+
+| Trait | Effect for that wave |
+|---|---|
+| RAIDER SWARM | Raiders launch 30% more often, missiles 30% less often |
+| MISSILE BARRAGE | Missiles launch 30% more often |
+| NUCLEAR STRIKE | Basestars launch their nukes in half the usual time |
+| HEAVY ASSAULT | Heavy Raiders launch 40% more often |
+| ESCORT | Basestars arrive close together |
+
+**Sets and Cylon tactics.** After the Major engagement a new set starts again at the Probe with one new permanent tactic, announced in the WAVE INBOUND line: set 2 QUICKER LAUNCHES (launches 15% more often), set 3 HARDENED BASESTARS (one more hit), set 4 FASTER HACKING (hack time about 6 s to 5 s), set 5 FASTER WARHEADS (missiles and nukes 8% faster). From set 6 the list repeats in half steps, with caps so very long battles stay playable. Easy uses half steps throughout.
+
+**Score multiplier.** Each completed set adds +0.25x to every score, up to 3x (SCORE x1.25, x1.50 ...). It is shown in TARGET VALUES and on the wave line.
+
+**Wave tally.** Clearing a wave scores 500 plus 10 per hull percent kept; the Major engagement adds 2,500. Both use the score multiplier.
+
+**Protect the fleet (1.2.2; tougher Raiders from 1.2.3; fairer from 1.2.5).** After each Major engagement the status line reads **PROTECT THE FLEET** and the scope is reset: no Basestars, missiles or fighters left over.
+
+- 2 to 4 civilian ships appear, picked at random from five types. They are blue, dim toward grey-blue as they take damage, and blink when their hull is critical (25% or less). Each label shows its hull, for example **CIVILIAN 60%**.
+- Only Raiders attack, and they go for the civilian ships, not for your ship or your Vipers. There are 4 Raiders after set 1 and 2 more after each later set, up to 12. Easy has 2 fewer and Hard 2 more (never above 12).
+- A lone Raider destroys a civilian ship in 26 seconds on Easy, 20 on Normal and 14 on Hard after set 1. From 1.2.3 each later set takes 10% of that time off, never below 10 seconds (Normal: 20, 18, 16, 14, 12, then 10 s). Two Raiders on one ship take half as long.
+- From 1.2.3 the round's Raiders are tougher than in normal waves: a Viper needs 4 hits after set 1, 5 after set 2 and 6 from set 3 (normal-wave Raiders take 2). They arrive 3 at a time, 1 second apart. They fire back: the first Viper to engage each Raider has a 1 in 6 chance of being lost (**VIPER LOST TO RAIDER RETURN FIRE**), one roll per Raider, so about 1 Viper is lost for every 6 Raiders. The usual Viper loss points apply.
+- Vipers only. You can launch as many Vipers in the round as there are Raiders. A Viper that is lost or lands is not replaced. Raptors, the Defense Battery, ship missiles and the Stealth Viper are off; their buttons read **VIPERS ONLY**. FTL is held (**HELD | PROTECT THE FLEET**). The auto options pause for the round and resume with the next wave.
+- From 1.2.5 toughness depends on size. The large ship (type C) lasts 2 times the kill time, the medium ships (A and D) 1.2 times, and the small ships (B and E) the kill time itself. **Contacts > Civilian Size Toughness** and the three **Civilian ... Toughness** values.
+- From 1.2.5 small and medium ships evade. When a Raider comes within 0.2 of the scope radius, the ship moves away from it (small 0.035, medium 0.02 scope radii per second), weaving side to side, with its path bent toward Galactica where the Vipers come from. Ships always stay inside the scope outline and above Galactica's outline. Evading buys time only; it does not reduce damage. Large ships hold position. **Contacts > Civilian Evasion**.
+- From 1.2.5 one Viper is already on patrol beside the fleet when the round starts (**Protect Patrol Vipers**, 0 for none). It counts toward the Vipers you can launch.
+- From 1.2.5 each Raider holds for 2 seconds where it jumps in, fading up from dim, then attacks (**Protect Jump In Hold**, 0 for none). Vipers can engage it while it holds.
+- With all four 1.2.5 switches off the round plays exactly as in 1.2.4.
+- The round ends when every Raider is destroyed or every civilian ship is lost, or after 60 seconds. Raiders still present then jump away.
+- Bonus: 500 x the hull each surviving ship kept, plus 1,000 if every ship survives. The score multiplier applies. The tally shows the ships saved, their average hull and the bonus.
+
+To play the 1.2.0 bonus sweep instead, set **Defined Waves > Set End Round** to **Bonus sweep** (or **None** to skip the round). In the bonus sweep 12 Raiders cross the scope in groups of three. They do not fire and there are no Basestars or missiles. Each one destroyed scores as usual; destroying all of them adds a PERFECT bonus of 3,000 x the multiplier.
+
+**Systems Bonus.** From 1.2.2 the first set (waves 1 to 5) gives no bonus. From wave 6 each cleared wave has a 40% chance of a bonus, and the end of every set (the Major engagement) always gives one. Bonuses come in three tiers by set:
+
+| Set | Tier offered |
+|---|---|
+| 1 | none |
+| 2 | low: EXTRA EMP CHARGE, FIGHTER SPEED +15% |
+| 3 and 4 | medium: EXTRA RAPID REPAIR, EXTRA RAPTOR, RAPID FIRE (1 in 3 from the low tier) |
+| 5 on | high: EXTRA VIPER SQUADRON, FREE AUTO BATTERY, STEALTH VIPER READY (1 in 3 from a lower tier) |
+
+Easy and Normal follow this schedule. Hard starts one set later (wave 11, so every tier shifts by one set) with a 20% chance per wave; the end of a set is still guaranteed. A bonus that cannot help (for example a repair when you already hold 3 charges, or FREE AUTO BATTERY when AUTO DEFENSE BATTERY is already on) is skipped and another is drawn from the same tier, or from a lower one. The same bonus never comes twice in a row. A wave with no bonus shows NO SYSTEMS BONUS in the tally:
+
+| Bonus | Effect |
+|---|---|
+| EXTRA RAPID REPAIR | +1 repair charge (not above 3) |
+| EXTRA EMP CHARGE | +1 EMP charge |
+| STEALTH VIPER READY | the Stealth Viper finishes rearming (Normal and Hard) |
+| EXTRA VIPER SQUADRON | +2 Vipers allowed until the next wave is cleared |
+| EXTRA RAPTOR | +1 Raptor allowed until the next wave is cleared |
+| FIGHTER SPEED +15% | Vipers and Raptors 15% faster until the next wave is cleared |
+| FREE AUTO BATTERY | the Defense Battery fires by itself, with no score penalty, until the next wave is cleared |
+| RAPID FIRE | ship missiles and fighters fire 25% more often until the next wave is cleared |
+
+Active boosts are listed under SCORE.
+
+**FTL jump.** During the rest the jump is free, starts the next wave after a 2-second safe period and adds 250 points. During an assault it costs 3,000 points as before; the wave counts as escaped and starts again from its first Basestar. During Protect the fleet FTL is held; with **Protect Allow Ftl** ticked, a jump abandons the civilian ships and gives no bonus. During a bonus sweep the sweep ends without a PERFECT bonus. Retry starts again at wave 1.
+
+**Classic timer waves.** Untick **Defined Waves** (Inspector, Defined Waves group) to play with the 1.1.1 two-minute waves instead.
 
 ## Bonus rapid repairs
 
@@ -350,11 +487,11 @@ Each standard or nuclear missile hit plays a short 0.45-second boom and flashes 
 
 ## Heavy Raiders
 
-Each identified Basestar periodically launches a Heavy Raider (labeled HEAVY RAIDER). Defaults: one per Basestar, two on screen at most (three from wave 4), a launch every 22 seconds per Basestar, speed 0.075 scope radii per second (slower than Vipers and Raptors) and three hit points (a Raider needs one).
+Each identified Basestar periodically launches a Heavy Raider (labeled HEAVY RAIDER). Defaults: one per Basestar, two on screen at most (three from wave 4), a launch every 28 seconds per Basestar (22 before 1.2.1), speed 0.075 scope radii per second (slower than Vipers and Raptors) and three hit points (a Raider needs one).
 
 Heavy Raiders ignore every other ship and fly straight to a parking spot just above the hull, one on each side, then stop to hack.
 
-1. **Approach:** The Heavy Raider flies toward the ship. A warning box appears to the left of the ship outline, below the battle readout: HEAVY RAIDER APPROACHING / PREPARE FIREWALL DEFENSE, with a steady amber border. When the hack starts, the hacking lines (countdown, hull drain, Firewall status) appear in the same box, which then flashes red. The box is hidden while no Heavy Raider is on its way. Position and text size: DradisConsole scene > HackAlert (Layout > Transform, Theme Overrides > Font Sizes, 17).
+1. **Approach:** The Heavy Raider flies toward the ship. A warning box appears to the left of the ship outline, below the battle readout: HEAVY RAIDER APPROACHING / PREPARE FIREWALL DEFENSE, with a steady amber border. When the hack starts, the hacking lines (countdown, hull drain, Firewall status) appear in the same box, which then flashes red. The box is hidden while no Heavy Raider is on its way. Position and text size: DradisConsole scene > HackAlert (Layout > Transform, Theme Overrides > Font Sizes, 17). From 1.2.5, with Console Layout V2 on, the same lines appear in the alert box in the left panel instead (ALERT STATUS when no Heavy Raider is on its way).
 2. **Hacking:** Once within range of the hull, it hacks for six seconds. No damage occurs yet.
 3. **Hull drain:** After a successful hack, it drains 2 percent of maximum hull per second until destroyed. Two hackers drain 4 percent per second. A persistent red COMPUTERS HACKED warning appears.
 4. **FTL offline (1.08):** As soon as any Heavy Raider has broken through, FTL goes **OFFLINE**: the ship outline shows OFFLINE in red instead of the FTL percent, the FTL JUMP button reads OFFLINE, and neither a manual jump nor AUTO FTL is possible. FTL comes back online once no Heavy Raider is draining (EMP, destroyed, or out of range); its charge then restarts from 0% and FTL can be used again only at 100% (45 seconds). The Firewall slows the hack, which keeps FTL available longer; the EMP or destroying the Heavy Raider ends the breach.
@@ -490,8 +627,10 @@ Stop the game, select **DradisConsole > CenterContainer > Dome > Contacts**, edi
 | Explosions | Screen Flash Seconds | 0.35 |
 | Explosions | Missile Boom Volume Db / Nuke Boom Volume Db | -15 / -9 |
 | Explosions | Boom Min Gap Seconds | 0.12 |
-| Nuclear Interception | Nuclear Hit Points / Raptor Nuke Hit Interval | 3 / 0.6 s |
-| Identification and Ship Weapons | Ship Missiles Target Nukes / Ship Nuke Target Fraction | On / 0.5 |
+| Nuclear Interception | Nuclear Hit Points / Raptor Nuke Hit Interval | 6 / 0.7 s |
+| Nuclear Interception | Raider Viper Hits / Raider Viper Hit Interval | 2 / 0.5 s (1 = the old one-pass kill) |
+| Identification and Ship Weapons | Ship Missiles Target Nukes / Ship Nuke Target Fraction | On / 0.75 |
+| Identification and Ship Weapons | Own Missile Interval / Basestar Hits To Destroy | 8 s / 11 |
 | Score and Rapid Repair | Battery Kill Points | 10 |
 | Bonus Features | Double Missile Bonus | On |
 | Bonus Features | Easy / Normal / Hard Double Missile Points | 15,000 / 17,500 / 20,000 |
@@ -536,6 +675,43 @@ Stop the game, select **DradisConsole > CenterContainer > Dome > Contacts**, edi
 | Waves | Wave Interval Floor | 0.6 |
 | Waves | Extra Heavy From Wave | 4 |
 | Waves | Wave Max Heavy Raiders | 3 |
+| Defined Waves | Defined Waves | on (off = 1.1.1 timer waves) |
+| Defined Waves | Wave Set Size / Wave Names | 5 / PROBE, STRIKE, ASSAULT, PRESSURE, MAJOR ENGAGEMENT |
+| Defined Waves | Easy / Normal / Hard Wave Force | 2,2,2,2,2 / 2,3,2,3,3 / 2,3,3,3,3 |
+| Defined Waves | Wave Onscreen Basestars / Wave Heavy Caps | 2,2,3,3,4 / 1,2,2,2,3 |
+| Defined Waves | Wave Launch Factors | 1.0, 0.95, 0.9, 0.85, 0.8 |
+| Defined Waves | Major Resurrection / Delay | on / 20 s |
+| Defined Waves | Wave Safety Seconds | 300 |
+| Defined Waves | Easy / Normal / Hard Rest Seconds | 10 / 7 / 5 |
+| Defined Waves | Wave Clear Points / Wave Hull Points / Set Clear Points | 500 / 10 / 2500 |
+| Defined Waves | Set Score Step / Cap | 0.25 / 3.0 |
+| Defined Waves | Traits Enabled / Set Modifiers Enabled | on / on |
+| Defined Waves | Set End Round | Protect the fleet (or Bonus sweep, None) |
+| Defined Waves | Bonus Sweep: Raiders / Group / Gap / Speed / Perfect Points | 12 / 3 / 3 s / 0.10 / 3000 |
+| Defined Waves | Ftl Rest Jump Points / Rest Jump Safe Seconds | 250 / 2 |
+| Defined Waves | Systems Bonuses | all eight (remove a name to turn it off) |
+| Defined Waves | Bonus Start Wave / Bonus Wave Chance | 6 / 0.4 |
+| Defined Waves | Bonus Low / Medium / High Tier | EMP, SPEED / REPAIR, RAPTOR, RAPID FIRE / VIPERS, AUTO BATTERY, STEALTH (repeat a name to make it likelier) |
+| Defined Waves | Bonus Low / Medium / High Tier Set | 2 / 3 / 5 |
+| Defined Waves | Bonus Lower Tier Chance | 0.3333 |
+| Defined Waves | Hard Bonus Set Delay / Hard Bonus Chance Factor | 1 / 0.5 |
+| Defined Waves | Show No Systems Bonus | on |
+| Defined Waves | Bonus Repair Cap / Extra Vipers / Extra Raptors / Speed / Fire | 3 / 2 / 1 / 1.15 / 0.75 |
+| Defined Waves | Wave Cues Enabled / Action Stations / All Clear Volume Db | on / -14 / -14 |
+| Defined Waves | Rest Tally Offset / Rest Tally Border Width | 0.22 / 3 px |
+| Protect the Fleet | Protect Civilians Min / Max | 2 / 4 |
+| Protect the Fleet | Protect First Raiders / Raiders Step / Raiders Cap | 4 / 2 / 12 |
+| Protect the Fleet | Easy / Hard Protect Raider Change | -2 / +2 |
+| Protect the Fleet | Easy / Normal / Hard Civilian Kill Seconds | 26 / 20 / 14 |
+| Protect the Fleet | Protect Kill Time Step / Kill Time Floor (1.2.3) | 0.1 / 10 s |
+| Protect the Fleet | Protect Round Seconds | 60 |
+| Protect the Fleet | Protect Ship Points / Full Fleet Points | 500 / 1000 |
+| Protect the Fleet | Protect Raider Speed / Attack Range / Group Size / Group Gap | 0.07 / 0.07 / 3 / 1.0 s (1.2.3; was 2 / 1.5 s) |
+| Protect the Fleet | Protect Raider Viper Hits / Hits Step / Hits Cap (1.2.3) | 4 / 1 / 6 |
+| Protect the Fleet | Protect Return Fire Chance (1.2.3; 0 = off) | 0.1667 |
+| Protect the Fleet | Protect Allow Ftl | off |
+| Protect the Fleet | Civilian Color / Damaged Color / Critical Percent / Blink Hz | blue (0.32, 0.58, 1.0) / grey-blue (0.28, 0.32, 0.46) / 25 / 3 |
+| Ship Sizes | Civilian Icon Scale / Civilian Capital Icon Scale | 1.6 / 2.1 |
 | Resurrection Ship | Resurrection Enabled | on |
 | Resurrection Ship | Resurrection First Wave | 2 |
 | Resurrection Ship | Resurrection Check Seconds / Resurrection Spawn Chance | 20 / 0.25 |
@@ -604,7 +780,7 @@ Stop the game, select **DradisConsole > CenterContainer > Dome > Contacts**, edi
 | Ship Defense | Battery Sound Speed | 3.0x |
 | FTL | Jump Volume Db | -8 |
 | Nuclear Threat | Nuclear Launch Delay | 18 seconds after ID |
-| Nuclear Threat | Nuclear Speed | 0.055 |
+| Nuclear Threat | Nuclear Speed | 0.058 |
 | Nuclear Threat | Nuclear Damage | 60 hull |
 | Nuclear Threat | Nuclear Alert Volume Db | -7 |
 | Nuclear Threat | Nuclear Alert Speed | 1.5x |
@@ -622,14 +798,15 @@ Stop the game, select **DradisConsole > CenterContainer > Dome > Contacts**, edi
 | Heavy Raiders | Heavy Raiders Enabled | on |
 | Heavy Raiders | Max Heavy Raiders | 2 (waves can raise it to 3) |
 | Heavy Raiders | Max Heavy Per Basestar | 1 |
-| Heavy Raiders | Heavy Launch Interval | 22 seconds |
+| Heavy Raiders | Heavy Launch Interval | 28 seconds |
 | Heavy Raiders | Heavy Raider Speed | 0.075 |
 | Heavy Raiders | Hacking Seconds | 6 |
 | Heavy Raiders | Hack Drain Percent Per Second | 2.0 |
 | Heavy Raiders | Hacking Range | 0.30 |
 | Heavy Raiders | Hack Park Offset | (0.16, 0.10) |
-| Heavy Raiders | Heavy Raider Hit Points | 3 |
-| Heavy Raiders | Ship Missile Heavy Range | 0.30 |
+| Heavy Raiders | Heavy Raider Hit Points | 5 |
+| Heavy Raiders | Ship Missile Heavy Range | 0.15 |
+| Heavy Raiders | Ship Missiles Target Hacking (1.2.3) | on |
 | Ship Defense | Missile Damage | 10 hull |
 | Ship Defense | Prox Defense Radius (kill zone at the arc) | 0.12 |
 | Ship Defense | Auto Battery Lead Radius | 0.22 |
@@ -648,17 +825,55 @@ Stop the game, select **DradisConsole > CenterContainer > Dome > Contacts**, edi
 | Ship Defense | Missile Impact Radius | 0.004 |
 | Ship Defense | Impact Volume Db | -10 |
 | Ship Defense | Hit Flash Seconds | 0.45 |
+| Keep Play In Wedge | Keep Play In Wedge / Wedge Margin (1.2.4) | On / 0.06 |
+
+On **Dome** (1.2.4):
+
+| Group | Setting | Default |
+|---|---|---:|
+| Ring Hinge | Ring Horizontal Hinge Front Back / Ring View Elevation Deg / Ring Hinge Direction | On / 30 / -1 |
+| Ring Trail | Ring Trail Enabled / Seconds / Copies | On / 0.20 / 24 |
+| Ring Trail | Ring Trail Strength / Ring Trail Glow Scale | 0.30 / 0.50 |
+| Ripples | Ripples Match Ring Plane / Ripple Max Radius | On / 320 (1.2.3: off / 340) |
+| Scanlines (1.2.6) | Scanlines Inside Scope | On in the scene (script default off = 1.2.5 scanlines over the whole dome square) |
+
+On **ConsoleFrame** (1.2.4):
+
+| Group | Setting | Default |
+|---|---|---:|
+| Scope Frame | Scope Frame Visible / Corner Panels Visible | On / On |
+| Scope Frame | Scope Border / Tick / Tick Major / Panel / Panel Dim / Panel Fill Color | the mockup colours |
+| Panel Animation | Panel Animation Enabled / Panel Step Seconds | On / 3 s |
+| Panel Animation | Panel Step Amount / Panel Flicker Amount | 1 / 0.3 |
+| Console Layout 2 (1.2.5) | Console Layout V2 | On in the scene (script default off = 1.2.4 layout) |
+| Console Layout 2 (1.2.5) | Hull Low Percent / Live Readouts / Nav Data Panel | 30 / On / On |
+
+On **Contacts** (1.2.5, Protect the fleet; the scene turns the four switches on, script defaults are the 1.2.4 round):
+
+| Setting | Default |
+|---|---:|
+| Civilian Size Toughness / Large / Medium / Small Toughness | On / 2.0 / 1.2 / 1.0 |
+| Civilian Evasion / Small / Medium Evade Speed | On / 0.035 / 0.02 |
+| Civilian Small / Medium Evade Damage | 1.0 / 1.0 (no cut) |
+| Civilian Evade Bias Home / Evade Floor Y | 0.5 / -0.5 |
+| Protect Patrol Vipers / Protect Jump In Hold | 1 / 2.0 s |
+| Protect Damage Stack Cap | 0 (no limit) |
 
 ## Suggested test
 
-1. Extract this build to a new folder, import it in Godot 4.7 and run it once. Open Settings: DRADIS BATTLE CONSOLE 1.1.1 should be at the bottom.
-2. Watch the left side during a battle: the destroyed counts should rise for kills by Vipers, ship missiles, Raptors, the Defense Battery and the Stealth Viper. EMP CHARGES should be the last line, in EMP blue. There should be no VIPERS RETURNING or INCOMING MISSILES lines.
-3. Let a pair of Vipers come home: LAUNCH VIPERS should show READY IN 3s after the last one lands. A landing Raptor should hold LAUNCH RAPTOR for 5 seconds.
-4. On Normal or Hard with 3 large ships, launch the Stealth Viper. After it fires, nearby Raiders should turn and chase it briefly. Over several runs about one in four should be lost.
-5. With AUTO LAUNCH RAPTORS on, wait for two nukes in the air: both Raptors should leave together.
-6. On Hard, nukes should feel slightly faster on average. The session log lists each nuke's speed bonus.
-7. When a Heavy Raider launches, the amber HEAVY RAIDER APPROACHING / PREPARE FIREWALL DEFENSE box should appear left of the ship outline, clear of EMP CHARGES; when it starts hacking, the hacking lines should appear in the same box.
-8. Export the Mac DMG and the Windows x64 and arm64 builds as before and check that they run. On the Surface Pro the session log START line should read graphics driver opengl3_angle.
+1. Extract this build to a new folder, import it in Godot 4.7 and run it once. Open Settings: DRADIS BATTLE CONSOLE 1.2.6 should be at the bottom.
+1a. Watch the scope for a minute. The rings should leave a soft trail and stay quiet, no brighter than 1.2.3. The flat ring should turn about the front-to-back axis, and the pulse rings should lie on its plane. The outline, ticks and corner panels should sit clear of the ship and the dome, and only a few panel bars should change, slowly. Try the window at 1600x900 and full screen.
+1b. Check the 1.2.5 layout: the VIPERS, RAPTOR, FTL and DEFENSES lights should dim when their bottom buttons cannot be used and brighten when they can. The alert box should read ALERT STATUS until a Heavy Raider launches. NAV DATA should change after an FTL jump and when a new battle starts. Let the hull fall below 30%: the HULL gauge should turn red.
+1c. Check 1.2.6: the corner panels, top tabs and NAV DATA box should no longer shimmer, while the scope keeps its slow rolling scanlines. When a Heavy Raider launches, the alert box outline should stay in the panel colour with amber text; while it hacks the outline should blink red, and after a breach it should be red.
+2. Start on Normal. Basestars should take noticeably longer to destroy (11 hits), a Viper should need two passes at a Raider, and the ship should fire at nukes only late in their flight. The right sidebar should read WAVE 1 and SET 1 | BASESTARS LEFT 2. Destroy both Basestars: Raiders should jump away, WAVE 1 CLEARED should appear with a tally panel in the lower scope, and a soft two-note cue should play.
+3. Watch the rest: about 7 seconds, with WAVE 2 INBOUND and three low horn pulses for the last 3 seconds. Then WAVE 2 | STRIKE | 3 BASESTARS.
+4. Try FTL JUMP during a rest: no points should be taken, and the next wave should start after a short pause.
+5. Play to wave 5 (Major engagement). The Resurrection Ship should arrive about 20 seconds in. After it and the Basestars are destroyed, SET 1 COMPLETE | SCORE x1.25 should show, with a Systems Bonus from the low tier (waves 1 to 4 should each have shown NO SYSTEMS BONUS), then PROTECT THE FLEET.
+6. In Protect the fleet, 2 to 4 blue civilian ships should appear with 4 Raiders, arriving 3 then 1, each dim for 2 seconds before it attacks. One Viper should already be with the fleet. Small and medium ships should move away from Raiders and stay inside the outline; the large ship should hold and last longer. Launch Vipers (up to 4 in the round). Each Raider should take about four Viper passes, and now and then a Viper should be lost with VIPER LOST TO RAIDER RETURN FIRE. In later sets the Raiders should take more hits and the civilian ships should fall faster. Raptors, the battery and FTL should read VIPERS ONLY or HELD. Damaged ships should dim and blink when critical. The tally should show the ships saved, hull and bonus. Wave 6 should announce NEW CYLON TACTIC: QUICKER LAUNCHES.
+7. Check that the wave tally border is clearly thicker, and that each Systems Bonus line makes sense (for example EXTRA VIPER SQUADRON should show VIPERS ACTIVE 0 / 8). With AUTO DEFENSE BATTERY on, FREE AUTO BATTERY should never be offered.
+8. When a Heavy Raider starts hacking, the ship should fire missiles at it (unless a nuke is in the last quarter of its flight). When a Heavy Raider launches, the amber box left of the ship outline should show HEAVY RAIDER APPROACHING / PREPARE FIREWALL DEFENSE centred in it. When it starts hacking the box should stay exactly the same size and place.
+9. Try Easy (10-second rests, no traits in the first set) and Hard (5-second rests, traits from wave 2).
+10. Export the Mac DMG and the Windows x64 and arm64 builds as before and check that they run.
 
 ## Known limits
 

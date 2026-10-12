@@ -1,4 +1,17 @@
 extends Control
+## 1.2.0: the Heavy Raider warning box always holds this many text lines.
+const HACK_BOX_LINES := 5
+var _hack_text_height: float = -1.0
+
+## 1.2.0: the real height of five lines of warning text (measured once).
+func hack_text_height() -> float:
+	if _hack_text_height < 0.0:
+		var alert: Label = $HackAlert
+		var held := alert.text
+		alert.text = "\n".join(PackedStringArray(["W", "W", "W", "W", "W"]).slice(0, HACK_BOX_LINES))
+		_hack_text_height = alert.get_minimum_size().y
+		alert.text = held
+	return _hack_text_height
 ##
 ## DRADIS Console - top-level scene.
 ##
@@ -439,7 +452,7 @@ func _process(delta: float) -> void:
 	sweep_loop.volume_db = sweep_volume_db
 	_update_score_display(delta)
 	var cooling: bool = contacts.viper_ready_in() > 0.0
-	var full: bool = contacts.count_vipers() >= contacts.max_vipers
+	var full: bool = contacts.count_vipers() >= contacts.viper_limit()
 	launch_button.disabled = cooling or full or contacts.is_defeated() or contacts.safe_remaining > 0.0
 	var viper_tag := "AUTO " if contacts.auto_launch_vipers else ""
 	if cooling:
@@ -448,24 +461,28 @@ func _process(delta: float) -> void:
 		launch_button.text = "LAUNCH VIPERS\n%sALL DEPLOYED" % viper_tag
 	else:
 		launch_button.text = "LAUNCH VIPERS\n%s2 PER LAUNCH" % viper_tag
-	_tip(launch_button, "Launch interceptors from below. Active: %d / %d" % [contacts.count_vipers(), contacts.max_vipers])
+	_tip(launch_button, "Launch interceptors from below. Active: %d / %d" % [contacts.count_vipers(), contacts.viper_limit()])
 	ftl_button.disabled = not contacts.can_jump()
 	var ftl_tag := "AUTO " if contacts.auto_ftl else ""
 	if contacts.ftl_offline:
 		ftl_button.text = "FTL JUMP\n%sOFFLINE" % ftl_tag
 	else:
 		ftl_button.text = ("FTL JUMP\n%s-%d POINTS" % [ftl_tag, contacts.ftl_score_cost]) if contacts.ftl_recharge_remaining <= 0.0 else "FTL JUMP\n%sCHARGING %ds" % [ftl_tag, ceili(contacts.ftl_recharge_remaining)]
+	if contacts.protect_active() and not contacts.protect_allow_ftl:
+		ftl_button.text = "FTL JUMP\nHELD | PROTECT THE FLEET"
 	_tip(ftl_button, "Escape for %d points (score cannot go below zero). Damage and remaining defense reserve are retained." % contacts.ftl_score_cost)
 	prox_button.disabled = not contacts.can_fire_battery()
 	prox_button.set_pressed_no_signal(contacts.prox_active)
 	var charge := int(contacts.battery_percent())
-	var auto_tag := "AUTO " if contacts.auto_defense_battery else ""
+	var auto_tag := "AUTO " if contacts.battery_auto_on() else ""
 	if contacts.prox_active:
 		prox_button.text = "DEFENSE BATTERY\n%sFIRING %d%%" % [auto_tag, charge]
 	elif charge >= 100:
 		prox_button.text = "DEFENSE BATTERY\n%sREADY 100%%" % auto_tag
 	else:
 		prox_button.text = "DEFENSE BATTERY\n%sRECHARGING %d%%" % [auto_tag, charge]
+	if contacts.protect_active():
+		prox_button.text = "DEFENSE BATTERY\nOFF | VIPERS ONLY"
 	_tip(prox_button, "Toggle firing on/off. Charge drains quickly while firing and recharges slowly when stopped. Standard missiles only; cannot hurt Heavy Raiders or nukes.")
 	firewall_button.disabled = not contacts.can_deploy_firewall()
 	firewall_button.set_pressed_no_signal(contacts.firewall_active)
@@ -481,13 +498,15 @@ func _process(delta: float) -> void:
 		firewall_button.text = "FIREWALL\n%sSTANDBY" % wall_tag
 	_tip(firewall_button, "Slows a Heavy Raider hack while deployed. Usable once a Heavy Raider starts hacking; used up in %d seconds, recharges in %d." % [int(contacts.firewall_seconds), int(contacts.firewall_recharge_seconds)])
 	_update_emp_split(shield)
-	raptor_button.disabled = contacts.is_defeated() or contacts.safe_remaining > 0.0 or contacts.raptor_ready_in() > 0.0 or contacts.count_kind("raptor") >= contacts.max_raptors
+	raptor_button.disabled = contacts.is_defeated() or contacts.safe_remaining > 0.0 or contacts.raptor_ready_in() > 0.0 or contacts.count_kind("raptor") >= contacts.raptor_limit()
 	var raptor_tag := "AUTO " if contacts.auto_launch_raptors else ""
 	raptor_button.text = "LAUNCH RAPTOR\n%s1 PER LAUNCH" % raptor_tag
-	if contacts.count_kind("raptor") >= contacts.max_raptors:
+	if contacts.count_kind("raptor") >= contacts.raptor_limit():
 		raptor_button.text = "LAUNCH RAPTOR\n%sALL DEPLOYED" % raptor_tag
 	elif contacts.raptor_ready_in() > 0.0:
 		raptor_button.text = "LAUNCH RAPTOR\n%sREADY IN %ds" % [raptor_tag, ceili(contacts.raptor_ready_in())]
+	if contacts.protect_active():
+		raptor_button.text = "LAUNCH RAPTOR\nOFF | VIPERS ONLY"
 	_tip(raptor_button, "Launch one Raptor. Prioritizes nukes, then Heavy Raiders, then attacks Basestars with light missiles.")
 	repair_button.disabled = not contacts.can_rapid_repair()
 	var repair_tag := "AUTO " if contacts.auto_rapid_repair else ""
@@ -510,13 +529,18 @@ func _process(delta: float) -> void:
 		screen_flash.color = Color(1.0, 0.9, 0.74, warm)
 	gear_button.set_pressed_no_signal(settings_open)
 	$HeaderMetrics/Enemies/Value.text = str(contacts.count_kind("raider") + contacts.count_kind("heavy_raider"))
-	$HeaderMetrics/Vipers/Value.text = "%d / %d" % [contacts.count_vipers(),contacts.max_vipers]
-	$HeaderMetrics/Raptors/Value.text = "%d / %d" % [contacts.count_kind("raptor"),contacts.max_raptors]
+	$HeaderMetrics/Vipers/Value.text = "%d / %d" % [contacts.count_vipers(),contacts.viper_limit()]
+	$HeaderMetrics/Raptors/Value.text = "%d / %d" % [contacts.count_kind("raptor"),contacts.raptor_limit()]
 	$HeaderMetrics/Basestars/Value.text = str(contacts.count_kind("baseship"))
 	_update_battle_readout()
 	$HackAlert.text = contacts.hacking_warning()
 	$HackAlert.visible = not $HackAlert.text.is_empty()
 	var hack_state: String = contacts.hack_state()
+	# 1.2.0: one fixed box for both messages; the approach warning sits centred in it.
+	$HackAlert.size.y = hack_text_height()
+	var centred: bool = hack_state == "approach"
+	$HackAlert.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER if centred else HORIZONTAL_ALIGNMENT_LEFT
+	$HackAlert.vertical_alignment = VERTICAL_ALIGNMENT_CENTER if centred else VERTICAL_ALIGNMENT_TOP
 	var hack_blink: bool = int(contacts.battle_time * 4.0) % 2 == 0
 	if hack_state == "draining":
 		$HackAlert.modulate = Color(1.0, 0.25, 0.3) if hack_blink else Color(1.0, 0.55, 0.58)
@@ -756,6 +780,8 @@ func score_stats_text(entry: Dictionary) -> String:
 	var total := 0
 	for kind in HighScores.STAT_KINDS:
 		total += int(stats.get(kind, 0))
+	if stats.has("sets"):
+		head += "\nWAVES CLEARED %d   SETS COMPLETED %d" % [int(stats.get("waves_cleared", 0)), int(stats.get("sets", 0))]
 	return head + "\nENEMIES DESTROYED  %d\nRAIDERS %d   HEAVY RAIDERS %d\nMISSILES %d   NUKES %d\nBASESTARS %d   RESURRECTION SHIPS %d" % [
 		total, int(stats.get("raider", 0)), int(stats.get("heavy_raider", 0)), int(stats.get("missile", 0)),
 		int(stats.get("nuke", 0)), int(stats.get("baseship", 0)), int(stats.get("resurrection_ship", 0))]

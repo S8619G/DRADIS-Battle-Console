@@ -313,3 +313,47 @@ static func make_emp_zap() -> AudioStreamWAV:
 		var sample := 0.85 * tanh(1.6 * (body + noise + snap)) * clampf((length - t) / 0.08, 0.0, 1.0)
 		data.encode_s16(i * 2, int(clampf(sample, -0.85, 0.85) * 32767.0))
 	return _wav(data, rate)
+
+static func make_action_stations() -> AudioStreamWAV:
+	# 1.2.0 wave inbound: three low, rounded horn pulses (A3) with a soft fifth,
+	# about 1.2 s. Distinct from the Basestar klaxon. Original PCM.
+	var rate := 48000
+	var length := 1.2
+	var frames := int(length * rate)
+	var data := PackedByteArray()
+	data.resize(frames * 2)
+	for i in range(frames):
+		var t := float(i) / rate
+		var sample := 0.0
+		for start in [0.0, 0.38, 0.76]:
+			var u: float = t - start
+			if u < 0.0 or u > 0.30:
+				continue
+			var envelope := minf(1.0, u / 0.02) * clampf((0.30 - u) / 0.06, 0.0, 1.0)
+			sample += envelope * (0.30 * sin(TAU * 220.0 * u) + 0.12 * sin(TAU * 440.0 * u) + 0.08 * sin(TAU * 330.0 * u) + 0.04 * sin(TAU * 660.0 * u))
+		data.encode_s16(i * 2, int(clampf(sample, -0.8, 0.8) * 32767.0))
+	return _wav(data, rate)
+
+static func make_all_clear() -> AudioStreamWAV:
+	# 1.2.0 wave cleared: a calm rising fifth (G4 then D5) on a soft pad,
+	# about 1.4 s, gentle attack and long fade. Original PCM.
+	var rate := 48000
+	var length := 1.4
+	var frames := int(length * rate)
+	var data := PackedByteArray()
+	data.resize(frames * 2)
+	var notes := [[0.0, 392.0], [0.35, 587.3]]
+	for i in range(frames):
+		var t := float(i) / rate
+		var sample := 0.0
+		for note in notes:
+			var start: float = note[0]
+			var pitch: float = note[1]
+			if t < start:
+				continue
+			var u := t - start
+			var envelope := minf(1.0, u / 0.05) * exp(-u * 2.2)
+			sample += envelope * (0.26 * sin(TAU * pitch * u) + 0.08 * sin(TAU * pitch * 2.0 * u) + 0.05 * sin(TAU * pitch * 1.003 * u))
+		sample *= clampf((length - t) / 0.15, 0.0, 1.0)
+		data.encode_s16(i * 2, int(clampf(sample, -0.8, 0.8) * 32767.0))
+	return _wav(data, rate)

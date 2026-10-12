@@ -5,8 +5,50 @@ extends RefCounted
 const KINDS := [
 	"unknown", "resurrection_ship", "baseship", "heavy_raider", "raider",
 	"raider_squadron", "battlestar", "colonial_fleet", "friendly_unknown",
-	"raptor", "s_star", "viper", "viper_squadron"
+	"raptor", "s_star", "viper", "viper_squadron",
+	"civilian_a", "civilian_b", "civilian_c", "civilian_d", "civilian_e"
 ]
+
+## Civilian ships: the five COLONIAL FLEET shapes (A-E) of the reference, one
+## ship each. Coordinates are the reference pixels x 0.58 (same units as the
+## other icons: a dot is 2.9 units across).
+static func _civilian(canvas: CanvasItem, kind: String, o: Vector2, s: float, c: Color) -> void:
+	match kind:
+		"civilian_a":
+			_line(canvas, Vector2(0, -9.3), Vector2(0, -5.3), o, s, c, 1.6)
+			_line(canvas, Vector2(-8.7, -4.6), Vector2(-4.6, -4.6), o, s, c, 1.6)
+			_line(canvas, Vector2(4.6, -4.6), Vector2(8.7, -4.6), o, s, c, 1.6)
+			for p in [Vector2(-2.6, -1.45), Vector2(2.6, -1.45), Vector2(-2.6, 4.35), Vector2(2.6, 4.35)]:
+				_dot(canvas, p, o, s, c)
+			_line(canvas, Vector2(-4.9, 8.4), Vector2(4.9, 8.4), o, s, c, 2.0)
+		"civilian_b":
+			_line(canvas, Vector2(-4.35, -6.7), Vector2(4.35, -6.7), o, s, c, 2.0)
+			for p in [Vector2(-2.6, -2.0), Vector2(2.6, -2.0)]:
+				_dot(canvas, p, o, s, c)
+			_line(canvas, Vector2(-9.6, 1.75), Vector2(-1.45, 1.75), o, s, c, 1.6)
+			_line(canvas, Vector2(1.45, 1.75), Vector2(9.6, 1.75), o, s, c, 1.6)
+			for p in [Vector2(-8.1, 6.1), Vector2(-2.6, 6.1), Vector2(2.6, 6.1), Vector2(8.1, 6.1)]:
+				_dot(canvas, p, o, s, c)
+		"civilian_c":
+			_line(canvas, Vector2(0, -13.3), Vector2(0, -9.3), o, s, c, 1.15)
+			canvas.draw_arc(o + Vector2(0, 1.15) * s, 6.8 * s, 0, TAU, 48, c, 1.05 * s, true)
+			for p in [Vector2(-9.6, 6.7), Vector2(9.6, 6.7), Vector2(-4.9, 10.7), Vector2(4.9, 10.7)]:
+				_dot(canvas, p, o, s, c)
+			_line(canvas, Vector2(-8.7, 9.9), Vector2(-12.2, 13.3), o, s, c, 1.15)
+			_line(canvas, Vector2(8.7, 9.9), Vector2(12.2, 13.3), o, s, c, 1.15)
+		"civilian_d":
+			_line(canvas, Vector2(-4.35, -10.4), Vector2(-4.35, -4.1), o, s, c, 1.3)
+			_line(canvas, Vector2(4.35, -10.4), Vector2(4.35, -4.1), o, s, c, 1.3)
+			for p in [Vector2(-2.6, 0.9), Vector2(2.6, 0.9)]:
+				_dot(canvas, p, o, s, c)
+			_line(canvas, Vector2(-4.9, 5.2), Vector2(-10.7, 10.4), o, s, c, 1.75)
+			_line(canvas, Vector2(4.9, 5.2), Vector2(10.7, 10.4), o, s, c, 1.75)
+		_:
+			_line(canvas, Vector2(-7.0, -6.4), Vector2(7.0, -6.4), o, s, c, 1.9)
+			for p in [Vector2(-2.6, -1.15), Vector2(2.6, -1.15)]:
+				_dot(canvas, p, o, s, c)
+			_line(canvas, Vector2(-5.2, 2.3), Vector2(-10.7, 7.25), o, s, c, 1.75)
+			_line(canvas, Vector2(5.2, 2.3), Vector2(10.7, 7.25), o, s, c, 1.75)
 
 static func is_viper(kind: String) -> bool:
 	return kind == "viper" or kind == "viper_squadron"
@@ -43,6 +85,9 @@ static func _feet(canvas: CanvasItem, o: Vector2, s: float, c: Color) -> void:
 	_line(canvas, Vector2(5, 7), Vector2(10, 12), o, s, c)
 
 static func _single(canvas: CanvasItem, kind: String, o: Vector2, s: float, c: Color) -> void:
+	if kind.begins_with("civilian_"):
+		_civilian(canvas, kind, o, s, c)
+		return
 	if kind == "fleet":
 		_line(canvas, Vector2(-8, -3), Vector2(8, -3), o, s, c, 2.0)
 		for p in [Vector2(-6, 2), Vector2(0, 2), Vector2(6, 2)]:
