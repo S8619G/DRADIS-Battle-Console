@@ -136,6 +136,9 @@ var last_shell_target: String = ""
 @onready var game_over_panel: Panel = $CenterContainer/Dome/GameOverPanel
 @onready var raptor_button: Button = $BottomButtons/LaunchRaptor
 @onready var nuclear_alert: Label = $NuclearAlert
+## 1.2.7: the status and nuclear alert font sizes set in the scene (the safety net shrinks from these).
+@onready var status_base_size: int = battle_status.get_theme_font_size("font_size")
+@onready var nuclear_base_size: int = nuclear_alert.get_theme_font_size("font_size")
 @onready var repair_button: Button = $BottomButtons/RapidRepair
 @onready var score_label: Label = $ScoreValue
 ## 1.07: right half of the split FIREWALL button, shown only while the EMP is offered.
@@ -468,7 +471,7 @@ func _process(delta: float) -> void:
 		ftl_button.text = "FTL JUMP\n%sOFFLINE" % ftl_tag
 	else:
 		ftl_button.text = ("FTL JUMP\n%s-%d POINTS" % [ftl_tag, contacts.ftl_score_cost]) if contacts.ftl_recharge_remaining <= 0.0 else "FTL JUMP\n%sCHARGING %ds" % [ftl_tag, ceili(contacts.ftl_recharge_remaining)]
-	if contacts.protect_active() and not contacts.protect_allow_ftl:
+	if contacts.protect_active():
 		ftl_button.text = "FTL JUMP\nHELD | PROTECT THE FLEET"
 	_tip(ftl_button, "Escape for %d points (score cannot go below zero). Damage and remaining defense reserve are retained." % contacts.ftl_score_cost)
 	prox_button.disabled = not contacts.can_fire_battery()
@@ -566,6 +569,31 @@ func _process(delta: float) -> void:
 	battle_status.visible = not nuclear_alert.visible
 	nuclear_alert.text = "NUCLEAR MISSILE INBOUND (%d) | RAPTOR OR FTL JUMP" % nukes
 	nuclear_alert.modulate = Color(1.0, 0.8, 0.2) if int(contacts.battle_time * 4.0) % 2 == 0 else Color(1.0, 0.15, 0.2)
+	_fit_status_label(battle_status, status_base_size)
+	_fit_status_label(nuclear_alert, nuclear_base_size)
+
+## 1.2.7: room for a status line: the label, and inside the status box when it is drawn.
+func status_text_room(label: Label) -> float:
+	var room := label.size.x
+	var frame: Control = get_node_or_null("ConsoleFrame")
+	if frame != null and frame.console_layout_v2 and frame.scope_frame_visible and frame.corner_panels_visible:
+		room = minf(room, frame._v2_status_rect().size.x)
+	return room - 24.0
+
+## 1.2.7: the largest font size, from the scene size down to 12, at which the text fits.
+## Every 1.2.7 message fits at the scene size in the default window; this is a safety net.
+func status_font_size(label: Label, text: String, base_size: int) -> int:
+	var font := label.get_theme_font("font")
+	var room := status_text_room(label)
+	var fs := base_size
+	while fs > 12 and font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x > room:
+		fs -= 1
+	return fs
+
+func _fit_status_label(label: Label, base_size: int) -> void:
+	var fs := status_font_size(label, label.text, base_size)
+	if label.get_theme_font_size("font_size") != fs:
+		label.add_theme_font_size_override("font_size", fs)
 
 # ------------------------------------------------------------------
 # Load the sweep audio manually from the raw WAV file. This avoids

@@ -2,6 +2,59 @@
 
 Functional changes in each version, newest first. Earlier development-stage notes are in `docs/history/`.
 
+## 1.2.7 (2026-10-12)
+
+Builds on DRADIS Battle Console 1.2.6.
+
+### Inbound threats in the alert box
+
+- Under ALERT STATUS, the alert box in the left panel lists each threat heading for the ship, with its count, most dangerous first: NUKES INBOUND (red), MISSILES INBOUND (amber) and HEAVY RAIDERS INBOUND (amber). The labels are singular for one (for example 1 NUKE INBOUND).
+- A line shows only while its count is above 0. Resurrection Ship barrage missiles count as missiles. Raiders, the Resurrection Ship itself and the ship's own stealth nukes are not listed. A Heavy Raider retreating after an EMP is not counted.
+- While a Heavy Raider is hacking, or after a breach, its warning takes over the whole box as in 1.2.6, with no summary line. The list returns when the hack ends.
+- Each line is measured against the box's slanted edge at its height. A label that would not fit is drawn smaller, then cut, so text never crosses the outline. The box holds 7 lines.
+
+### Right panel score multiplier
+
+- SCORE MULTIPLIER now has its own line under the wave line. In 1.2.6 it was at the end of the wave line, which could run past the panel border with a long wave name.
+- The Resurrection Ship block moves down one line (22 px).
+- Every right-panel wave line is fitted to the panel's text width (316 px) and drawn smaller if it would not fit.
+
+### Wider status box
+
+- The message box at the top reaches the outer edges of the top tabs and corner panels below it: 1,092 px wide at 1920 x 1080 instead of 720 px. The longest message, the Resurrection Ship warning, now fits.
+- As a safety net, a message that would still be wider than the box (or a small window) is drawn at a smaller size, down to 12 px. The nuclear alert line has the same safety net.
+
+### Protect the fleet result
+
+- The result has a title: FLEET SAVED (green) when every ship survives, n OF m SHIPS SAVED when some are lost, FLEET LOST (red) when none survive.
+- Under it, one line shows the ships saved, the fleet hull and the Raiders destroyed. Then the bonus is shown large (40 px) in yellow, with FLEET BONUS (and FULL FLEET) under it; with no bonus, a quiet NO FLEET BONUS line. The NEXT line is unchanged.
+- The bonus and the panel border flash twice a second for the first 3 seconds, then stay steady.
+- Each outcome has its own sound (original synthesized audio): a rising chime for FLEET SAVED (1.9 s), a neutral two-tone for a partial save (1.7 s) and a falling tone for FLEET LOST (2.0 s).
+- The result stays up 5 seconds longer after this round: 15 s on Easy, 12 s on Normal and 10 s on Hard. WAVE INBOUND and its horn still take the last 3 seconds. Rests after normal waves are unchanged.
+- Contacts > Protect the Fleet: Protect Result Extra Seconds (5), Protect Result Flash Seconds (3), Protect Result Sounds (on), Fleet Saved / Partial / Lost Volume Db (-14).
+
+### FTL held in Protect the fleet
+
+- FTL can never be used during the round, by the button or by Auto FTL. The Protect Allow Ftl option (off in 1.2.6) is removed.
+
+### Auto Launch Vipers in Protect the fleet
+
+- Auto Launch Vipers now carries through to the round, within the round's limit of one Viper per Raider. The other auto options (battery, firewall, Raptors, FTL and Rapid Repair) still pause for the round.
+- The usual 10% score cut per auto option applies, as it does to every score.
+
+### Nuke speed
+
+- Easy 1.1x (was 1.0), Normal 1.25x (was 1.1) and Hard 1.45x (was 1.6), as tried in the Inspector. The 0% to 8% random speed bonus at launch is kept.
+
+### Faster Raiders and Heavy Raiders on Hard
+
+- Raiders and Heavy Raiders fly 10% faster on Hard: Raiders on their approach, patrol, chase and return, and Heavy Raiders on their run to the ship and back. Difficulty > Hard Raider Speed and Hard Heavy Raider Speed (1.1).
+- Easy and Normal are unchanged, as are the Raiders in Protect the fleet.
+
+### Unchanged
+
+- The rings (colour, thickness, glow, clock, trail, hinge and ripples), the scanlines, the scope, the console layout apart from the changes above, and every other sound.
+
 ## 1.2.6 (2026-10-12)
 
 Builds on DRADIS Battle Console 1.2.5.

@@ -357,3 +357,52 @@ static func make_all_clear() -> AudioStreamWAV:
 		sample *= clampf((length - t) / 0.15, 0.0, 1.0)
 		data.encode_s16(i * 2, int(clampf(sample, -0.8, 0.8) * 32767.0))
 	return _wav(data, rate)
+
+# ---------- 1.2.7: Protect the fleet result sounds (original PCM) ----------
+## Notes are [start s, pitch Hz, level]; partials are [pitch multiple, level]. Soft attack,
+## exponential decay and a short fade at the end, like the 1.2.0 wave cues.
+static func _pad_tones(length: float, notes: Array, decay: float, partials: Array, attack: float, rate: int) -> PackedFloat32Array:
+	var frames := int(length * rate)
+	var out := PackedFloat32Array()
+	out.resize(frames)
+	for i in range(frames):
+		var t := float(i) / rate
+		var sample := 0.0
+		for note in notes:
+			var u: float = t - float(note[0])
+			if u < 0.0:
+				continue
+			var envelope := minf(1.0, u / attack) * exp(-u * decay)
+			var voice := 0.0
+			for partial in partials:
+				voice += float(partial[1]) * sin(TAU * float(note[1]) * float(partial[0]) * u)
+			sample += float(note[2]) * envelope * voice
+		out[i] = sample * clampf((length - t) / 0.25, 0.0, 1.0)
+	return out
+
+static func _pcm16(samples: PackedFloat32Array, rate: int) -> AudioStreamWAV:
+	var data := PackedByteArray()
+	data.resize(samples.size() * 2)
+	for i in range(samples.size()):
+		data.encode_s16(i * 2, int(clampf(samples[i], -0.8, 0.8) * 32767.0))
+	return _wav(data, rate)
+
+## Every ship saved: a rising G-major arpeggio (G4 B4 D5, then G5), about 1.9 s.
+static func make_fleet_saved() -> AudioStreamWAV:
+	var bright := [[1.0, 0.26], [2.0, 0.08], [1.003, 0.05], [3.0, 0.03]]
+	return _pcm16(_pad_tones(1.9, [[0.0, 392.0, 1.0], [0.16, 493.9, 1.0], [0.32, 587.3, 1.0], [0.48, 784.0, 1.1]], 2.0, bright, 0.04, 48000), 48000)
+
+## Some ships saved: neutral and unresolved. Two even tones a fourth apart (D5, A4),
+## then both together, about 1.7 s.
+static func make_fleet_partial() -> AudioStreamWAV:
+	var soft := [[1.0, 0.24], [2.0, 0.06], [1.002, 0.05]]
+	return _pcm16(_pad_tones(1.7, [[0.0, 587.3, 1.3], [0.30, 440.0, 1.3], [0.60, 587.3, 0.78], [0.60, 440.0, 0.78]], 2.4, soft, 0.05, 48000), 48000)
+
+## Every ship lost: a slow falling minor line (D4 Bb3 G3) over a low G2, about 2.0 s.
+static func make_fleet_lost() -> AudioStreamWAV:
+	var dark := [[1.0, 0.28], [2.0, 0.04], [0.997, 0.06]]
+	var line := _pad_tones(2.0, [[0.0, 293.7, 1.0], [0.35, 233.1, 1.0], [0.70, 196.0, 1.1]], 1.6, dark, 0.04, 48000)
+	var low := _pad_tones(2.0, [[0.70, 98.0, 0.6]], 1.2, [[1.0, 0.3], [2.0, 0.05]], 0.04, 48000)
+	for i in range(line.size()):
+		line[i] += low[i]
+	return _pcm16(line, 48000)

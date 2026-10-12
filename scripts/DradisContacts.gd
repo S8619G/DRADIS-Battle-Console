@@ -379,9 +379,17 @@ var evade_outside := 0
 ## 1.2.3: Raiders in this round fire back. When a Viper first engages a Raider, that
 ## Viper is lost with this chance (rolled once per Raider; 0 = off).
 @export_range(0.0, 1.0) var protect_return_fire_chance: float = 0.1667
-## FTL during the round. Off (default): FTL is held. On: a jump abandons the
-## civilian ships, so the round ends with no bonus.
-@export var protect_allow_ftl: bool = false
+## 1.2.7: FTL is always held during the round (the 1.2.2 Protect Allow Ftl option is removed);
+## the ship stays to protect the civilian ships.
+## 1.2.7: extra seconds the result stays on screen after the round (added to the rest).
+@export_range(0.0, 20.0) var protect_result_extra_seconds: float = 5.0
+## 1.2.7: seconds the bonus and the panel border flash (twice a second) before staying steady.
+@export_range(0.0, 10.0) var protect_result_flash_seconds: float = 3.0
+## 1.2.7: a sound when the round ends: all saved, some saved (neutral) or all lost.
+@export var protect_result_sounds: bool = true
+@export_range(-40.0, 6.0) var fleet_saved_volume_db: float = -14.0
+@export_range(-40.0, 6.0) var fleet_partial_volume_db: float = -14.0
+@export_range(-40.0, 6.0) var fleet_lost_volume_db: float = -14.0
 ## Civilian ship colors: blue, dimming toward Damaged Color with lost hull, and
 ## blinking at or below Critical Percent.
 @export var civilian_color := Color(0.32, 0.58, 1.0)
@@ -473,9 +481,15 @@ var evade_outside := 0
 @export_range(0.5, 3.0) var normal_missile_speed: float = 1.1
 @export_range(0.5, 3.0) var hard_missile_speed: float = 1.6
 ## Nuclear missile speed on each level (1.0 = the 1.03 speed).
-@export_range(0.5, 3.0) var easy_nuke_speed: float = 1.0
-@export_range(0.5, 3.0) var normal_nuke_speed: float = 1.1
-@export_range(0.5, 3.0) var hard_nuke_speed: float = 1.6
+## 1.2.7: Easy 1.0 -> 1.1, Normal 1.1 -> 1.25, Hard 1.6 -> 1.45 (field-tested).
+@export_range(0.5, 3.0) var easy_nuke_speed: float = 1.1
+@export_range(0.5, 3.0) var normal_nuke_speed: float = 1.25
+@export_range(0.5, 3.0) var hard_nuke_speed: float = 1.45
+## 1.2.7: Raider and Heavy Raider movement speed on Hard (1.0 = the same as Easy and Normal).
+## Raiders: approach, patrol, chase and return. Heavy Raiders: the run to the ship and the
+## way home. Protect the fleet Raiders keep Protect Raider Speed.
+@export_range(1.0, 2.0) var hard_raider_speed: float = 1.1
+@export_range(1.0, 2.0) var hard_heavy_raider_speed: float = 1.1
 ## Score multiplier for each difficulty.
 @export_range(0.1, 1.0) var easy_score_multiplier: float = 0.75
 @export_range(1.0, 5.0) var hard_score_multiplier: float = 1.5
@@ -944,6 +958,14 @@ var protect_hull_kept: int = 0
 var protect_end_reason: String = ""
 var last_protect_bonus: int = 0
 var rest_after_protect: bool = false
+## 1.2.7: Protect the fleet result (time it appeared, sounds played, auto Viper launches in the round).
+var protect_result_started: float = -100.0
+var protect_result_sound_count: int = 0
+var last_protect_result_sound: String = ""
+var protect_auto_viper_launches: int = 0
+var fleet_saved_player: AudioStreamPlayer
+var fleet_partial_player: AudioStreamPlayer
+var fleet_lost_player: AudioStreamPlayer
 var protect_civilian_kinds: Array[String] = []
 ## 1.2.3: Vipers lost to Raider return fire this round.
 var protect_vipers_lost_to_fire: int = 0
@@ -1029,6 +1051,12 @@ func _ready() -> void:
 	action_stations_player.max_polyphony = 1
 	all_clear_player = _boom_player("AllClearAudio", BattleAudio.make_all_clear(), all_clear_volume_db)
 	all_clear_player.max_polyphony = 1
+	fleet_saved_player = _boom_player("FleetSavedAudio", BattleAudio.make_fleet_saved(), fleet_saved_volume_db)
+	fleet_saved_player.max_polyphony = 1
+	fleet_partial_player = _boom_player("FleetPartialAudio", BattleAudio.make_fleet_partial(), fleet_partial_volume_db)
+	fleet_partial_player.max_polyphony = 1
+	fleet_lost_player = _boom_player("FleetLostAudio", BattleAudio.make_fleet_lost(), fleet_lost_volume_db)
+	fleet_lost_player.max_polyphony = 1
 	reset_battle()
 
 func _process(delta: float) -> void:
@@ -1290,7 +1318,7 @@ func _update_raider(raider: Dictionary, delta: float) -> void:
 			raider.age = 0.0
 			return
 		raider.home_id = home.id
-		_steer(raider, home.position, small_hostile_speed * returning_speed_factor, delta)
+		_steer(raider, home.position, raider_speed() * returning_speed_factor, delta)
 		if raider.position.distance_to(home.position) <= 0.05:
 			raiders_docked += 1
 			_remove_contact(raider.id)
@@ -1315,7 +1343,7 @@ func _update_raider(raider: Dictionary, delta: float) -> void:
 				nearest = gap
 				prey = other
 	if not prey.is_empty() and raider.phase == "harass":
-		_steer(raider, prey.position, small_hostile_speed * 1.3, delta)
+		_steer(raider, prey.position, raider_speed() * 1.3, delta)
 		if nearest <= 0.05 and raider.attack_cooldown <= 0.0:
 			raider.attack_cooldown = maxf(0.5, raider_attack_cooldown)
 			if Icons.is_viper(prey.kind) and prey.get("phase", "") == "return":
@@ -1331,7 +1359,7 @@ func _update_raider(raider: Dictionary, delta: float) -> void:
 					_damage_fighter(prey, "RAIDER FIRE")
 		return
 	if raider.phase == "approach":
-		_steer(raider, raider.approach_point, small_hostile_speed, delta)
+		_steer(raider, raider.approach_point, raider_speed(), delta)
 		if raider.position.distance_to(raider.approach_point) < 0.03:
 			raider.phase = "harass"
 			raider.patrol_angle = atan2((raider.position.y + 0.10) / 0.22, raider.position.x / 0.40)
@@ -1339,7 +1367,7 @@ func _update_raider(raider: Dictionary, delta: float) -> void:
 		raider.patrol_angle += delta * 0.11
 		var patrol := Vector3(cos(raider.patrol_angle) * 0.40,
 			-0.10 + sin(raider.patrol_angle) * 0.22, 0.08)
-		_steer(raider, patrol, small_hostile_speed, delta)
+		_steer(raider, patrol, raider_speed(), delta)
 
 func _raider_home(raider: Dictionary) -> Dictionary:
 	# Prefer the launching Basestar; otherwise the nearest surviving one.
@@ -1489,7 +1517,7 @@ func set_prox_defense(enabled: bool) -> void:
 	_set_status("DEFENSE BATTERY FIRING | STANDARD MISSILES ONLY", 3.0)
 
 func can_jump() -> bool:
-	if protect_active() and not protect_allow_ftl:
+	if protect_active():
 		return false
 	return not is_defeated() and not ftl_offline and ftl_recharge_remaining <= 0.0
 
@@ -1722,9 +1750,9 @@ func speed_for_kind(kind: String) -> float:
 	if kind == "missile":
 		return missile_speed
 	if kind == "heavy_raider":
-		return heavy_raider_speed
+		return heavy_speed()
 	if kind in SMALL_HOSTILE_KINDS:
-		return maxf(0.001, small_hostile_speed)
+		return raider_speed()
 	return maxf(0.001, normal_ship_speed)
 
 func size_for_kind(kind: String) -> float:
@@ -2853,6 +2881,14 @@ func difficulty_factor(easy: float, hard: float) -> float:
 		2: return hard
 	return 1.0
 
+## 1.2.7: Raider speed for the level being played (Hard Raider Speed on Hard only).
+func raider_speed() -> float:
+	return maxf(0.001, small_hostile_speed) * (maxf(1.0, hard_raider_speed) if active_difficulty == 2 else 1.0)
+
+## 1.2.7: Heavy Raider speed for the level being played (Hard Heavy Raider Speed on Hard only).
+func heavy_speed() -> float:
+	return heavy_raider_speed * (maxf(1.0, hard_heavy_raider_speed) if active_difficulty == 2 else 1.0)
+
 ## Missile and nuke speed for the level being played (Easy keeps the 1.03 speed).
 func missile_speed_factor() -> float:
 	return maxf(0.1, [easy_missile_speed, normal_missile_speed, hard_missile_speed][clampi(active_difficulty, 0, 2)]) * set_warhead_factor()
@@ -2901,9 +2937,13 @@ func missiles_in_defense_zone(radius: float = -1.0) -> int:
 
 func _update_automation() -> void:
 	# 1.2.2: Protect the fleet is manual play; every auto option pauses for the round.
+	# 1.2.7: except Auto Launch Vipers, which carries through (within the round's
+	# one-Viper-per-Raider launch limit).
 	if protect_active():
 		auto_battery_started = false
 		auto_firewall_started = false
+		if auto_launch_vipers:
+			_auto_launch_vipers()
 		return
 	_update_auto_repair()
 	if _update_auto_ftl():
@@ -2968,14 +3008,21 @@ func vipers_on_patrol() -> int:
 ## Auto launch: Vipers while enemy fighters are present (at least 2 out, one per
 ## fighter up to the limit); Raptors for each nuke, and one against Basestars.
 ## Uses the normal launch rules, so cooldowns and limits still apply.
+func _auto_launch_vipers() -> void:
+	if is_defeated() or safe_remaining > 0.0:
+		return
+	var fighters := enemy_fighters()
+	if fighters > 0 and vipers_on_patrol() < clampi(fighters, 2, viper_limit()):
+		if launch_vipers() > 0:
+			auto_viper_launches += 1
+			if protect_active():
+				protect_auto_viper_launches += 1
+
 func _update_auto_launch() -> void:
 	if is_defeated() or safe_remaining > 0.0:
 		return
 	if auto_launch_vipers:
-		var fighters := enemy_fighters()
-		if fighters > 0 and vipers_on_patrol() < clampi(fighters, 2, viper_limit()):
-			if launch_vipers() > 0:
-				auto_viper_launches += 1
+		_auto_launch_vipers()
 	if auto_launch_raptors:
 		var raptors := count_kind("raptor")
 		var nukes := count_kind("nuke")
@@ -3313,7 +3360,7 @@ func _update_heavy_raiders(delta: float) -> void:
 			_update_emp_heavy(heavy, delta)
 			continue
 		if heavy.phase == "approach":
-			_steer(heavy, heavy.hack_point, heavy_raider_speed, delta)
+			_steer(heavy, heavy.hack_point, heavy_speed(), delta)
 			if heavy.position.distance_to(heavy.hack_point) <= 0.025 and heavy.position.distance_to(own_ship_position) <= hacking_range:
 				heavy.phase = "hacking"
 				heavy.velocity = Vector3.ZERO
@@ -3527,12 +3574,12 @@ func _update_emp_heavy(heavy: Dictionary, delta: float) -> void:
 	if home.is_empty():
 		# No Basestar left: fly away from the ship and leave the scope.
 		var away: Vector3 = heavy.position + (heavy.position - own_ship_position).normalized()
-		_steer(heavy, away, heavy_raider_speed, delta)
+		_steer(heavy, away, heavy_speed(), delta)
 		if heavy.emp_return_age >= 8.0:
 			emp_heavies_docked += 1
 			_remove_contact(heavy.id)
 		return
-	_steer(heavy, home.position, heavy_raider_speed, delta)
+	_steer(heavy, home.position, heavy_speed(), delta)
 	if heavy.position.distance_to(home.position) <= 0.05:
 		emp_heavies_docked += 1
 		_remove_contact(heavy.id)
@@ -4287,7 +4334,7 @@ func _raider_focus_stealth(raider: Dictionary, delta: float) -> bool:
 			raider.stealth_done = stealth.id
 			return true
 	var before: Vector3 = raider.position
-	_steer(raider, stealth.position, small_hostile_speed * 1.3, delta)
+	_steer(raider, stealth.position, raider_speed() * 1.3, delta)
 	raider.stealth_chased += before.distance_to(raider.position)
 	if raider.stealth_chased >= stealth_pursuit_distance or gap > stealth_focus_range * 1.5:
 		raider.stealth_done = stealth.id
@@ -4350,6 +4397,9 @@ func _reset_wave_system() -> void:
 	rest_after_sweep = false
 	_reset_protect_state()
 	protect_rounds = 0
+	protect_result_started = -100.0
+	protect_result_sound_count = 0
+	last_protect_result_sound = ""
 	protect_full_fleets = 0
 	viper_limit_hold = 0
 	raptor_limit_hold = 0
@@ -4895,6 +4945,7 @@ func protect_time_left() -> float:
 	return maxf(0.0, protect_round_seconds - protect_elapsed)
 
 func _reset_protect_state() -> void:
+	protect_auto_viper_launches = 0
 	protect_civilians_total = 0
 	protect_raiders_total = 0
 	protect_raiders_spawned = 0
@@ -5176,10 +5227,45 @@ func _end_protect(reason: String, jumped: bool = false) -> void:
 	rest_after_protect = true
 	upcoming_trait = _draw_trait(wave + 1)
 	_begin_rest()
+	# 1.2.7: the result stays up longer after this round, and a sound marks the outcome.
+	wave_rest_remaining += maxf(0.0, protect_result_extra_seconds)
+	protect_result_started = battle_time
+	_play_protect_result_sound()
 	_set_status("PROTECT THE FLEET COMPLETE | %d OF %d SAVED | +%d" % [protect_saved, protect_civilians_total, last_protect_bonus], maxf(2.0, wave_rest_remaining - inbound_seconds))
 	battle_event.emit("protect the fleet complete (%s) | saved %d of %d | hull %d%% | Raiders destroyed %d of %d, jumped away %d | Vipers launched %d | bonus %d" % [
 		reason, protect_saved, protect_civilians_total, protect_hull_kept, protect_raiders_destroyed, protect_raiders_spawned,
 		protect_raiders_escaped, protect_vipers_launched, last_protect_bonus])
+
+## 1.2.7: "saved" (every ship), "partial" (some lost) or "lost" (none saved).
+func protect_outcome() -> String:
+	if protect_saved <= 0:
+		return "lost"
+	return "saved" if protect_saved >= protect_civilians_total else "partial"
+
+func protect_result_title() -> String:
+	match protect_outcome():
+		"saved": return "FLEET SAVED"
+		"lost": return "FLEET LOST"
+	return "%d OF %d SHIPS SAVED" % [protect_saved, protect_civilians_total]
+
+## True while the bonus and border are in the bright half of the flash (always after the flash time).
+func protect_result_flash_on() -> bool:
+	var elapsed := battle_time - protect_result_started
+	if elapsed < 0.0 or elapsed >= protect_result_flash_seconds:
+		return true
+	return int(elapsed * 4.0) % 2 == 0
+
+func _play_protect_result_sound() -> void:
+	var outcome := protect_outcome()
+	last_protect_result_sound = outcome
+	if not protect_result_sounds:
+		return
+	var player: AudioStreamPlayer = {"saved": fleet_saved_player, "partial": fleet_partial_player, "lost": fleet_lost_player}[outcome]
+	if not is_instance_valid(player):
+		return
+	player.volume_db = {"saved": fleet_saved_volume_db, "partial": fleet_partial_volume_db, "lost": fleet_lost_volume_db}[outcome]
+	player.play()
+	protect_result_sound_count += 1
 
 func _play_wave_cue(player: AudioStreamPlayer) -> void:
 	if not wave_cues_enabled or not is_instance_valid(player):
@@ -5212,9 +5298,13 @@ func wave_detail_line() -> String:
 		parts.append("NEXT  " + next_round_name())
 	elif wave_phase == "protect":
 		parts.append("CIVILIANS %d / %d" % [civilians_left(), protect_civilians_total])
-	if set_score_multiplier() > 1.0:
-		parts.append("SCORE x%.2f" % set_score_multiplier())
 	return "  |  ".join(parts)
+
+## 1.2.7: the set score multiplier on its own line under the wave detail line.
+func wave_score_line() -> String:
+	if not wave_system_active() or set_score_multiplier() <= 1.0:
+		return ""
+	return "SCORE MULTIPLIER  x%.2f" % set_score_multiplier()
 
 ## Tally lines shown in the lower scope during the rest.
 func rest_tally_lines() -> Array[String]:
@@ -5222,9 +5312,14 @@ func rest_tally_lines() -> Array[String]:
 	if not wave_system_active() or wave_phase != "rest":
 		return lines
 	if rest_after_protect:
-		lines.append("PROTECT THE FLEET  %d OF %d SAVED" % [protect_saved, protect_civilians_total])
-		lines.append("FLEET HULL %d%%  |  RAIDERS DOWN %d OF %d" % [protect_hull_kept, protect_raiders_destroyed, protect_raiders_spawned])
-		lines.append("FLEET BONUS  +%d%s" % [last_protect_bonus, "  |  FULL FLEET" if protect_saved > 0 and protect_saved == protect_civilians_total and protect_end_reason != "FTL" else ""])
+		# 1.2.7: result title, details, the bonus on its own large line, then its label.
+		lines.append(protect_result_title())
+		lines.append("%d OF %d SAVED  |  FLEET HULL %d%%  |  RAIDERS DOWN %d OF %d" % [protect_saved, protect_civilians_total, protect_hull_kept, protect_raiders_destroyed, protect_raiders_spawned])
+		if last_protect_bonus > 0:
+			lines.append("+%d" % last_protect_bonus)
+			lines.append("FLEET BONUS%s" % ("  |  FULL FLEET" if protect_outcome() == "saved" and protect_end_reason != "FTL" else ""))
+		else:
+			lines.append("NO FLEET BONUS")
 	elif rest_after_sweep:
 		lines.append("BONUS SWEEP  %s" % last_sweep_result)
 		if not last_bonus_label.is_empty():
@@ -5250,6 +5345,9 @@ func _draw_rest_tally(font: Font) -> void:
 	var lines: Array[String] = rest_tally_lines()
 	if lines.is_empty():
 		return
+	if rest_after_protect:
+		_draw_protect_result(font, lines)
+		return
 	var radius: float = get_parent().sphere_radius
 	var top := size.y * 0.5 + radius * rest_tally_offset
 	var step := 26.0
@@ -5262,3 +5360,62 @@ func _draw_rest_tally(font: Font) -> void:
 		var color := Color("#ede0e8") if index == 0 else (Color("#ffe28b") if index == lines.size() - 1 else Color("#b9a8b2"))
 		var text_width := font.get_string_size(lines[index], HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
 		draw_string(font, Vector2(size.x * 0.5 - text_width * 0.5, top + 28.0 + step * index), lines[index], HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, color)
+
+## 1.2.7: the Protect the fleet result panel. A green (saved, partial) or red (lost) title,
+## one detail line, the bonus large in yellow, its label, then the usual NEXT line.
+## The bonus and the border flash for Protect Result Flash Seconds, then stay steady.
+func protect_result_rows(lines: Array[String]) -> Array:
+	var title_color := Color(1.0, 0.3, 0.35) if protect_outcome() == "lost" else Color(0.45, 1.0, 0.6)
+	var rows := [[lines[0], 26, title_color, 34.0], [lines[1], 16, Color("#b9a8b2"), 26.0]]
+	if last_protect_bonus > 0:
+		rows.append([lines[2], 40, Color("#ffe28b"), 50.0])
+		rows.append([lines[3], 16, Color("#ffe28b"), 26.0])
+	else:
+		rows.append([lines[2], 22, Color("#b9a8b2"), 36.0])
+	rows.append([lines[lines.size() - 1], 16, Color("#b9a8b2"), 28.0])
+	return rows
+
+func protect_result_rect(rows: Array) -> Rect2:
+	var radius: float = get_parent().sphere_radius
+	var height := 24.0
+	for row in rows:
+		height += float(row[3])
+	return Rect2(size.x * 0.5 - 280.0, size.y * 0.5 + radius * rest_tally_offset - 30.0, 560.0, height)
+
+func _draw_protect_result(font: Font, lines: Array[String]) -> void:
+	var rows := protect_result_rows(lines)
+	var r := protect_result_rect(rows)
+	var flash_on := protect_result_flash_on()
+	var title_color: Color = rows[0][2]
+	draw_rect(r, Color(0.0, 0.0, 0.0, 0.9))
+	draw_rect(r, title_color if flash_on else Color("#77324f"), false, maxf(1.0, rest_tally_border_width) + 1.0)
+	var y := r.position.y + 6.0
+	for i in range(rows.size()):
+		y += float(rows[i][3])
+		var color: Color = rows[i][2]
+		if i == 2 and last_protect_bonus > 0 and not flash_on:
+			color = Color(color, 0.35)
+		var fs: int = rows[i][1]
+		var text: String = rows[i][0]
+		while fs > 10 and font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x > r.size.x - 24.0:
+			fs -= 1
+		var tw := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		draw_string(font, Vector2(size.x * 0.5 - tw * 0.5, y), text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, color)
+
+## 1.2.7: threats inbound to the ship for the alert box, most dangerous first. Each entry is
+## [count, label, colour]; a line is listed only while its count is above 0. Raiders, the
+## Resurrection Ship itself and the player's stealth nukes are not listed.
+func inbound_threats() -> Array:
+	var rows := []
+	if is_defeated():
+		return rows
+	var nukes := count_kind("nuke")
+	var missiles := count_kind("missile")
+	var heavies := maxi(0, count_kind("heavy_raider") - emp_heavies_present())
+	if nukes > 0:
+		rows.append([nukes, "NUKE INBOUND" if nukes == 1 else "NUKES INBOUND", Color(1.0, 0.25, 0.3)])
+	if missiles > 0:
+		rows.append([missiles, "MISSILE INBOUND" if missiles == 1 else "MISSILES INBOUND", Color(1.0, 0.78, 0.25)])
+	if heavies > 0:
+		rows.append([heavies, "HEAVY RAIDER INBOUND" if heavies == 1 else "HEAVY RAIDERS INBOUND", Color(1.0, 0.78, 0.25)])
+	return rows

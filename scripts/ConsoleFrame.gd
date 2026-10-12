@@ -170,18 +170,21 @@ func _draw() -> void:
 	_text("WAVE %d" % battle.wave,side+Vector2(0,428+low),30,TEXT)
 	if battle.wave_system_active():
 		# 1.2.0: phase and set, then wave name, trait and set multiplier.
-		_text(battle.wave_phase_line(),side+Vector2(0,462+low),18,MUTED)
-		_text(battle.wave_detail_line(),side+Vector2(0,486+low),16,Color("#ffe28b"))
+		# 1.2.7: the score multiplier has its own line; every line is fitted to the panel width.
+		_text_fit(battle.wave_phase_line(),side+Vector2(0,462+low),18,MUTED)
+		_text_fit(battle.wave_detail_line(),side+Vector2(0,486+low),16,Color("#ffe28b"))
+		_text_fit(battle.wave_score_line(),side+Vector2(0,508+low),16,Color("#ffe28b"))
 	elif battle.waves_enabled:
 		var left_seconds := ceili(battle.seconds_to_next_wave())
 		_text("NEXT WAVE IN  %d:%02d" % [int(left_seconds / 60.0), left_seconds % 60],side+Vector2(0,462+low),18,MUTED)
 	var res: Dictionary = battle.resurrection_ship()
 	if not res.is_empty():
 		var hostile := Color(1.0, 0.36, 0.42)
-		_text("RESURRECTION SHIP",side+Vector2(0,516+low),19,hostile)
-		_text("STRENGTH  %d%%" % ceili(100.0 * res.hits_remaining / res.max_hits),side+Vector2(0,550+low),20,TEXT)
+		# 1.2.7: 22 px lower, under the new score multiplier line.
+		_text("RESURRECTION SHIP",side+Vector2(0,538+low),19,hostile)
+		_text("STRENGTH  %d%%" % ceili(100.0 * res.hits_remaining / res.max_hits),side+Vector2(0,572+low),20,TEXT)
 		var barrage := "FIRING BARRAGE" if res.barrage_left > 0 else "NEXT BARRAGE  %ds" % ceili(res.barrage_timer)
-		_text(barrage,side+Vector2(0,580+low),18,Color("#ffe28b"))
+		_text(barrage,side+Vector2(0,602+low),18,Color("#ffe28b"))
 	_draw_bonus_lines()
 	if get_parent().development_build:
 		_text("DRADIS  %d dB" % int(get_parent().sweep_volume_db), Vector2(82,size.y-132),18,MUTED)
@@ -438,6 +441,22 @@ func _panel_step(index: int) -> int:
 func _text(value: String, position: Vector2, font_size: int, color: Color) -> void:
 	draw_string(ThemeDB.fallback_font, position, value, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, color)
 
+## 1.2.7: room for text in the right panel, from its text column to the inner border.
+const RIGHT_PANEL_TEXT_ROOM := 316.0
+
+## 1.2.7: the largest font size (down to 10) at which value fits in room.
+func fit_font_size(value: String, font_size: int, room: float) -> int:
+	var font := ThemeDB.fallback_font
+	var fs := font_size
+	while fs > 10 and font.get_string_size(value, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x > room:
+		fs -= 1
+	return fs
+
+func _text_fit(value: String, position: Vector2, font_size: int, color: Color, room: float = RIGHT_PANEL_TEXT_ROOM) -> void:
+	if value.is_empty():
+		return
+	_text(value, position, fit_font_size(value, font_size, room), color)
+
 
 # ---------- 1.2.5: console layout 2 shapes (mockup pixels, 1600x900) ----------
 const V2_PANEL_TOP := 340.0
@@ -451,7 +470,8 @@ const V2_TAB_OUTER_R := 1190.0
 const V2_TAB_TOP := 456.0
 const V2_TAB_STEP := 31.0
 const V2_ALERT_TOP := 636.0
-const V2_STATUS_HALF := 300.0
+## 1.2.7: the status box reaches the outer edges of the top tabs and corner panels (was 300).
+const V2_STATUS_HALF := (V2_PANEL_OUTER_R - V2_PANEL_OUTER_L) * 0.5
 
 func _v2_status_rect() -> Rect2:
 	var k := _frame_scale()
@@ -640,11 +660,14 @@ func _v2_alert_box() -> void:
 	var x0 := box[0].x + 9.0 * k
 	var y0 := box[1].y + 7.0 * k
 	draw_colored_polygon(box, get_parent().get_node("Background").color)
-	if state == "":
-		draw_colored_polygon(box, panel_fill_color)
+	# 1.2.7: quiet or a Heavy Raider approaching: ALERT STATUS and the inbound threat list.
+	# Hacking and a breach still take over the whole box.
+	if state == "" or state == "approach":
+		draw_colored_polygon(box, panel_fill_color if state == "" else Color(1.0, 0.78, 0.25, 0.08))
 		draw_polyline(box, panel_color.darkened(0.2), 1.5 * k, true)
 		var fs := maxi(9, int(round(12.0 * k)))
 		draw_string(font, Vector2(x0, y0 + font.get_ascent(fs)), "ALERT STATUS", HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color8(240, 170, 205))
+		_draw_threat_list(box, battle.inbound_threats(), x0, y0 + font.get_height(fs), fs, k)
 		return
 	var blink: bool = int(battle.battle_time * 4.0) % 2 == 0
 	var color := Color(1.0, 0.2, 0.26) if blink or state == "draining" else Color(1.0, 0.78, 0.25)
@@ -682,6 +705,46 @@ func _v2_alert_box() -> void:
 			lx = box[0].x + (bw - font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, fs2).x) * 0.5
 		draw_string(font, Vector2(lx, y + font.get_ascent(fs2)), line, HORIZONTAL_ALIGNMENT_LEFT, -1, fs2, text_color)
 		y += line_h
+
+## 1.2.7: x of the box's slanted right edge at height y.
+func alert_box_right_x(box: PackedVector2Array, y: float) -> float:
+	var span := box[3].y - box[2].y
+	return box[2].x if span <= 0.0 else lerpf(box[2].x, box[3].x, clampf((y - box[2].y) / span, 0.0, 1.0))
+
+## 1.2.7: one line per inbound threat: the count right-aligned in a narrow column, then the
+## label. Each label is measured against the slanted edge at its line's top (the narrowest
+## point) and shrinks, then is cut, so text never crosses the outline. Lines that would run
+## past the bottom of the box are not drawn.
+func threat_line_layout(box: PackedVector2Array, rows: Array, x0: float, y_start: float, font_size: int, k: float) -> Array:
+	var font := ThemeDB.fallback_font
+	var line_h := font.get_height(font_size)
+	var out := []
+	var y := y_start
+	for row in rows:
+		if y + line_h > box[3].y - 4.0 * k:
+			break
+		var label: String = row[1]
+		var lx := x0 + 26.0 * k
+		var room := alert_box_right_x(box, y) - 6.0 * k - lx
+		var fs := font_size
+		while fs > 9 and font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x > room:
+			fs -= 1
+		while label.length() > 1 and font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x > room:
+			label = label.substr(0, label.length() - 1)
+		out.append({"count": str(row[0]), "label": label, "color": row[2], "y": y, "size": fs, "label_x": lx,
+			"count_right": x0 + 18.0 * k, "label_width": font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x,
+			"room": room})
+		y += line_h
+	return out
+
+func _draw_threat_list(box: PackedVector2Array, rows: Array, x0: float, y_start: float, font_size: int, k: float) -> void:
+	var font := ThemeDB.fallback_font
+	for line in threat_line_layout(box, rows, x0, y_start, font_size, k):
+		var fs: int = line.size
+		var ascent := font.get_ascent(fs)
+		var cw := font.get_string_size(line.count, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		draw_string(font, Vector2(line.count_right - cw, line.y + ascent), line.count, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, line.color)
+		draw_string(font, Vector2(line.label_x, line.y + ascent), line.label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, line.color)
 
 ## 1.2.6: the alert box outline. Where 1.2.5 drew it amber (a Heavy Raider approaching,
 ## and the steady half of the hacking blink) it now uses the normal panel outline colour,
