@@ -104,6 +104,14 @@ const SMALL_HOSTILE_KINDS := ["raider"]
 ## Defense Battery kill zone: distance from the ship (scope radii). Missile paths cross
 ## the flak arc at about 0.06 to 0.10, so 0.12 destroys missiles on or just above the arc.
 @export_range(0.05, 0.7) var prox_defense_radius: float = 0.12
+## 1.2.8: chance that the firing Defense Battery shoots down a nuke in the kill zone.
+## One chance per nuke (0.35 = about 1 nuke in 3). Same on every level.
+@export_range(0.0, 1.0) var battery_nuke_chance: float = 0.35
+## 1.2.8: splash damage when the battery shoots down a nuke, as a share of a direct
+## nuke hit (0.33 = one third: about 15 hull on Easy, 20 on Normal, 25 on Hard).
+@export_range(0.0, 1.0) var battery_nuke_splash: float = 0.33
+## 1.2.8: the Auto Defense Battery also starts firing when a nuke comes close.
+@export var auto_battery_for_nukes: bool = true
 ## Auto Defense Battery starts firing when a missile is this close, a moment before
 ## it reaches the kill zone, so the arc is already active when it arrives.
 @export_range(0.05, 0.7) var auto_battery_lead_radius: float = 0.22
@@ -193,7 +201,7 @@ const SMALL_HOSTILE_KINDS := ["raider"]
 @export_range(5.0, 90.0) var heavy_launch_interval: float = 28.0
 @export_range(0.03, 0.12) var heavy_raider_speed: float = 0.075
 @export_range(2.0, 20.0) var hacking_seconds: float = 6.0
-@export_range(0.5, 8.0) var hack_drain_percent_per_second: float = 2.0
+@export_range(0.5, 8.0) var hack_drain_percent_per_second: float = 1.5
 @export_range(0.27, 0.5) var hacking_range: float = 0.30
 ## Where Heavy Raiders park beside the ship: X to each side, Y above the hull.
 @export var hack_park_offset := Vector2(0.16, 0.10)
@@ -782,6 +790,10 @@ var screen_flash_peak: float = 0.0
 var last_boom := {"missile": -INF, "nuke": -INF, "craft": -INF, "heavy": -INF, "capital": -INF}
 var booms_played := {"missile": 0, "nuke": 0, "craft": 0, "heavy": 0, "capital": 0}
 var nuke_hits_landed: int = 0
+## 1.2.8: nukes the battery shot down, nukes it missed, and the splash damage taken.
+var battery_nuke_kills: int = 0
+var battery_nuke_misses: int = 0
+var battery_splash_damage: float = 0.0
 var viper_squadrons: Array = []
 ## 1.07: targets claimed by Vipers this frame, the shared patrol angle and missile retargets.
 var viper_claims := {}
@@ -1623,6 +1635,9 @@ func reset_battle() -> void:
 	last_boom = {"missile": -INF, "nuke": -INF, "craft": -INF, "heavy": -INF, "capital": -INF}
 	booms_played = {"missile": 0, "nuke": 0, "craft": 0, "heavy": 0, "capital": 0}
 	nuke_hits_landed = 0
+	battery_nuke_kills = 0
+	battery_nuke_misses = 0
+	battery_splash_damage = 0.0
 	viper_squadrons.clear()
 	auto_battery_starts = 0
 	auto_firewall_starts = 0
@@ -2764,6 +2779,10 @@ func _update_special_projectiles(delta: float) -> void:
 	for projectile in contacts.duplicate():
 		if projectile.kind == "nuke":
 			projectile.position = projectile.position.move_toward(own_ship_position, nuclear_speed * nuke_speed_factor() * (1.0 + float(projectile.get("speed_bonus", 0.0))) * movement_speed * delta)
+			if _battery_try_nuke(projectile):
+				if is_defeated():
+					return
+				continue
 			if projectile.position.distance_to(own_ship_position) <= missile_impact_radius:
 				_remove_contact(projectile.id)
 				nuclear_hits += 1
@@ -2935,6 +2954,41 @@ func missiles_in_defense_zone(radius: float = -1.0) -> int:
 			total += 1
 	return total
 
+## 1.2.8: nukes within the radius that the battery has not had its chance at yet.
+func nukes_for_battery(radius: float = -1.0) -> int:
+	var reach := prox_defense_radius if radius < 0.0 else radius
+	var total := 0
+	for contact in contacts:
+		if contact.kind == "nuke" and not contact.get("battery_rolled", false) and contact.position.distance_to(own_ship_position) <= reach:
+			total += 1
+	return total
+
+## 1.2.8: while the Defense Battery fires, a nuke in the kill zone gets one chance
+## (Battery Nuke Chance) to be shot down. It explodes close to the ship and does
+## splash damage (Battery Nuke Splash x a direct hit) and scores full nuke points.
+## Returns true when the nuke was destroyed.
+func _battery_try_nuke(projectile: Dictionary) -> bool:
+	if not prox_active or projectile.get("battery_rolled", false):
+		return false
+	if projectile.position.distance_to(own_ship_position) > prox_defense_radius:
+		return false
+	projectile.battery_rolled = true
+	if rng.randf() >= battery_nuke_chance:
+		battery_nuke_misses += 1
+		return false
+	battery_nuke_kills += 1
+	_award_destroyed(projectile)
+	nuclear_intercepts += 1
+	impacts.append({"position": projectile.position, "age": 0.0})
+	_explode(projectile.position, "nuke")
+	_remove_contact(projectile.id)
+	var splash := nuclear_damage * damage_factor() * battery_nuke_splash
+	battery_splash_damage += splash
+	apply_damage(splash)
+	if not is_defeated():
+		_set_status("DEFENSE BATTERY: NUKE DESTROYED | SPLASH DAMAGE", 4.0)
+	return true
+
 func _update_automation() -> void:
 	# 1.2.2: Protect the fleet is manual play; every auto option pauses for the round.
 	# 1.2.7: except Auto Launch Vipers, which carries through (within the round's
@@ -2963,6 +3017,8 @@ func _update_automation() -> void:
 	if not prox_active:
 		auto_battery_started = false
 	var threats := missiles_in_defense_zone(maxf(prox_defense_radius, auto_battery_lead_radius))
+	if auto_battery_for_nukes:
+		threats += nukes_for_battery(maxf(prox_defense_radius, auto_battery_lead_radius))
 	if threats > 0 and not prox_active and can_fire_battery():
 		set_prox_defense(true)
 		if prox_active:
@@ -5314,7 +5370,7 @@ func rest_tally_lines() -> Array[String]:
 	if rest_after_protect:
 		# 1.2.7: result title, details, the bonus on its own large line, then its label.
 		lines.append(protect_result_title())
-		lines.append("%d OF %d SAVED  |  FLEET HULL %d%%  |  RAIDERS DOWN %d OF %d" % [protect_saved, protect_civilians_total, protect_hull_kept, protect_raiders_destroyed, protect_raiders_spawned])
+		lines.append("FLEET HULL %d%%  |  RAIDERS DOWN %d OF %d" % [protect_hull_kept, protect_raiders_destroyed, protect_raiders_spawned])
 		if last_protect_bonus > 0:
 			lines.append("+%d" % last_protect_bonus)
 			lines.append("FLEET BONUS%s" % ("  |  FULL FLEET" if protect_outcome() == "saved" and protect_end_reason != "FTL" else ""))

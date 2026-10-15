@@ -2,6 +2,35 @@
 
 Functional changes in each version, newest first. Earlier development-stage notes are in `docs/history/`.
 
+## 1.2.8 (2026-10-13)
+
+Builds on DRADIS Battle Console 1.2.7.
+
+### Splash screen
+
+- The game starts on its own splash screen instead of the Godot logo: a DRADIS BATTLE CONSOLE patch with the scope and ship icons, over a star field.
+- Small print at the bottom states that this is an unofficial, free fan project, not affiliated with or endorsed by Universal City Studios LLC, NBCUniversal or SYFY, and that Battlestar Galactica names and marks belong to Universal City Studios LLC. The last line reads "Original code, artwork and sound © 2026 S8619G, MIT License."
+- It stays up at least 3 seconds, on a black background, and keeps its shape in any window size.
+- Project Settings > Application > Boot Splash: Image `res://assets/splash/dradis_splash.png`, Bg Color black, Minimum Display Time 3000 ms.
+
+### Defense Battery against nukes
+
+- While the Defense Battery fires, each nuke that reaches its kill zone (0.12 scope radii, at the flak arc) gets one 35% chance, about 1 in 3, to be shot down. If the chance fails, the battery cannot stop that nuke again.
+- A nuke shot down this way explodes close to the ship and does splash damage: one third of a direct nuke hit (about 15 hull on Easy, 20 on Normal, 25 on Hard). It scores full nuke points (500 times the multiplier) and counts as a nuke destroyed. The status reads DEFENSE BATTERY: NUKE DESTROYED | SPLASH DAMAGE.
+- AUTO DEFENSE BATTERY also starts firing when a nuke comes within 0.22 scope radii, as it does for missiles.
+- The same values apply on every level. Raptors, ship missiles and FTL work as before.
+- Contacts > Ship Defense: Battery Nuke Chance (0.35), Battery Nuke Splash (0.33), Auto Battery For Nukes (on).
+
+### Slower hack drain
+
+- After a Heavy Raider breach, the hull drains 1.5% of maximum hull a second on Normal (was 2%). Easy and Hard keep their slower and faster hack speeds on top. Two hacking Heavy Raiders drain 3% a second.
+- Contacts > Heavy Raiders > Hack Drain Percent Per Second: 1.5.
+- In computer runs with every auto option on (8 battles each), median survival rose from about 9 to about 14.5 minutes on Normal and from about 4.6 to about 7.3 minutes on Hard.
+
+### Shorter Protect the fleet result line
+
+- The line under FLEET SAVED, n OF m SHIPS SAVED or FLEET LOST no longer repeats the ship count. It reads FLEET HULL n% | RAIDERS DOWN a OF b.
+
 ## 1.2.7 (2026-10-12)
 
 Builds on DRADIS Battle Console 1.2.6.

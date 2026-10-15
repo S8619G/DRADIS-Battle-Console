@@ -14,7 +14,7 @@ A tactical defense game for Windows (x64 and arm64) and Mac (Apple M-series and 
 - Protect the fleet after each Major engagement: Vipers defend civilian ships from Raiders.
 - A console frame around the scope with corner panels, ready lights, an alert box that lists inbound threats, NAV DATA and a HULL gauge.
 - Viper squadrons that split up to engage and rejoin when the area is clear.
-- Raptors for nuclear missiles and Basestars, ship missiles that change target, a defense battery for close missiles, and a firewall and EMP against Heavy Raider hacking.
+- Raptors for nuclear missiles and Basestars, ship missiles that change target, a defense battery for close missiles that can also shoot down a nuke at close range, and a firewall and EMP against Heavy Raider hacking.
 - A Stealth Viper with two nuclear missiles on Normal and Hard: when 3 or more large ships are on the scope, the top nacelle of the ship becomes a blue STEALTH WEAPON button.
 - Rapid Repair, FTL jumps, Easy, Normal and Hard difficulty, and optional auto modes.
 - High scores with per-battle stats (hover or tap an entry) and the best score shown during play; settings saved on the computer, with a session log for troubleshooting.
