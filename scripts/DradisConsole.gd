@@ -533,7 +533,8 @@ func _process(delta: float) -> void:
 	gear_button.set_pressed_no_signal(settings_open)
 	$HeaderMetrics/Enemies/Value.text = str(contacts.count_kind("raider") + contacts.count_kind("heavy_raider"))
 	$HeaderMetrics/Vipers/Value.text = "%d / %d" % [contacts.count_vipers(),contacts.viper_limit()]
-	$HeaderMetrics/Raptors/Value.text = "%d / %d" % [contacts.count_kind("raptor"),contacts.raptor_limit()]
+	# 1.2.9: the Protect the fleet repair Raptor is not counted as one of yours.
+	$HeaderMetrics/Raptors/Value.text = "%d / %d" % [contacts.player_raptor_count(),contacts.raptor_limit()]
 	$HeaderMetrics/Basestars/Value.text = str(contacts.count_kind("baseship"))
 	_update_battle_readout()
 	$HackAlert.text = contacts.hacking_warning()

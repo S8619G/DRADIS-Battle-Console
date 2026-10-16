@@ -140,6 +140,8 @@ scanlines_inside_scope = true
 ripple_color = Color(0.3254902, 0.6862745, 1, 1)
 ripple_max_radius = 320.0
 ripples_match_ring_plane = true
+ripple_period_seconds = 6.0
+three_rings_enabled = true
 
 [node name="Contacts" type="Control" parent="CenterContainer/Dome"]
 layout_mode = 1
@@ -155,6 +157,18 @@ civilian_size_toughness = true
 civilian_evasion = true
 protect_patrol_vipers = 1
 protect_jump_in_hold = 2.0
+protect_round_sounds = true
+civilian_hull_bar = true
+protect_round_counter = true
+protect_challenge_mix = true
+protect_extra_raiders = 1
+protect_later_kill_time_factor = 0.75
+protect_dogfights = true
+protect_vipers_stay_out = true
+protect_label_declutter = true
+civilian_large_evade_speed = 0.02
+civilian_self_repair = true
+protect_repair_raptor = true
 
 [node name="GameOverPanel" type="Panel" parent="CenterContainer/Dome"]
 visible = false

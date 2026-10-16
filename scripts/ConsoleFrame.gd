@@ -652,6 +652,24 @@ func alert_box_poly() -> PackedVector2Array:
 	return PackedVector2Array([Vector2(lx, top + c), Vector2(lx + c, top), Vector2(rt, top),
 		Vector2(rb, bottom), Vector2(lx + c, bottom), Vector2(lx, bottom - c), Vector2(lx, top + c)])
 
+## 1.2.9: PROTECT THE FLEET with SHIPS n OF m, RAIDERS n LEFT and TIME m:ss.
+func protect_counter_rows() -> Array:
+	var left_s := maxi(0, ceili(battle.protect_time_left()))
+	return [["SHIPS", "%d OF %d" % [battle.civilians_left(), battle.protect_civilians_total], battle.civilian_color],
+		["RAIDERS", "%d LEFT" % battle.protect_raiders_left(), Color(1.0, 0.36, 0.36)],
+		["TIME", "%d:%02d" % [floori(left_s / 60.0), left_s % 60], Color8(230, 220, 228)]]
+
+func _draw_protect_counter(x0: float, y0: float, fs: int, k: float) -> void:
+	var font := ThemeDB.fallback_font
+	draw_string(font, Vector2(x0, y0 + font.get_ascent(fs)), "PROTECT THE FLEET", HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color8(240, 170, 205))
+	var line_h := font.get_height(fs) * 1.25
+	var value_fs := maxi(10, int(round(14.0 * k)))
+	var y := y0 + font.get_height(fs) + line_h * 0.4
+	for row in protect_counter_rows():
+		y += line_h
+		draw_string(font, Vector2(x0, y), row[0], HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color8(200, 150, 180))
+		draw_string(font, Vector2(x0 + 70.0 * k, y), row[1], HORIZONTAL_ALIGNMENT_LEFT, -1, value_fs, row[2])
+
 func _v2_alert_box() -> void:
 	var k := _frame_scale()
 	var box := alert_box_poly()
@@ -666,6 +684,10 @@ func _v2_alert_box() -> void:
 		draw_colored_polygon(box, panel_fill_color if state == "" else Color(1.0, 0.78, 0.25, 0.08))
 		draw_polyline(box, panel_color.darkened(0.2), 1.5 * k, true)
 		var fs := maxi(9, int(round(12.0 * k)))
+		# 1.2.9: during Protect the fleet the box counts ships, Raiders and time left.
+		if battle.protect_round_counter and battle.protect_active():
+			_draw_protect_counter(x0, y0, fs, k)
+			return
 		draw_string(font, Vector2(x0, y0 + font.get_ascent(fs)), "ALERT STATUS", HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color8(240, 170, 205))
 		_draw_threat_list(box, battle.inbound_threats(), x0, y0 + font.get_height(fs), fs, k)
 		return

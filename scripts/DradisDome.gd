@@ -54,10 +54,46 @@ const ScopeShape = preload("res://scripts/ScopeShape.gd")
 ## With the trail on, the ring's own glow is scaled by this so overall light stays the same.
 @export_range(0.0, 1.0) var ring_trail_glow_scale: float = 0.50
 
+# ---------- THREE RINGS (1.2.9) ----------
+@export_group("Three Rings")
+## Off = 1.2.8 rings. On = three rings measured from the reference clip, each on
+## its own hinge, sharing one cycle: vertical (hinged top/bottom), horizontal
+## (hinged front/back) and a third horizontal ring (hinged left/right).
+@export var three_rings_enabled: bool = false
+## One cycle = each ring turns half way round (the clip: 2.0 s, the sweep pulse).
+@export_range(0.5, 8.0) var three_ring_cycle_seconds: float = 2.0
+## Moves the whole cycle in time (seconds), to line it up with the sweep pulse.
+@export_range(-2.0, 2.0) var three_ring_time_offset: float = 0.0
+## Easing: 0 = steady turn; 1 = stops briefly at the slow point. Clip: 0.69.
+@export_range(0.0, 1.0) var three_ring_horizontal_ease: float = 0.69
+## Easing for the vertical ring (slow point is face-on). Clip: 0.87.
+@export_range(0.0, 1.0) var three_ring_vertical_ease: float = 0.87
+## Vertical ring is half a cycle out of step with the horizontal rings (clip: 0.5).
+@export_range(0.0, 1.0) var three_ring_vertical_phase: float = 0.5
+## On = the vertical ring is pinned at the top and bottom of the dome outline and
+## turns straight up and down (no side-to-side wobble). Off = drawn with the
+## from-above view like the other rings (it tilts as it turns).
+@export var three_ring_vertical_upright: bool = true
+## Vertical ring centre above the dome centre (fraction of radius). 0 = centred.
+@export_range(-0.3, 0.3) var three_ring_vertical_lift: float = 0.0
+## Vertical ring size (fraction of radius). 1 = the dome outline.
+@export_range(0.8, 1.1) var three_ring_vertical_scale: float = 1.0
+## Show each ring.
+@export var three_ring_show_vertical: bool = true
+@export var three_ring_show_front_back: bool = true
+@export var three_ring_show_left_right: bool = true
+## Brightness of each ring (1 = Ring Color as set). Keep the rings quiet.
+@export_range(0.0, 1.0) var three_ring_vertical_strength: float = 0.75
+@export_range(0.0, 1.0) var three_ring_front_back_strength: float = 0.75
+@export_range(0.0, 1.0) var three_ring_left_right_strength: float = 0.75
+## Afterglow length for the two horizontal rings (seconds). The vertical ring uses
+## Ring Trail Seconds. Total glow stays the same; a longer trail spreads it out.
+@export_range(0.05, 1.5) var three_ring_horizontal_trail_seconds: float = 0.40
+
 # ---------- BASE PLANE RIPPLES ----------
 @export_group("Ripples")
 @export var ripples_visible: bool = true
-@export_range(0.5, 6.0) var ripple_period_seconds: float = 2.0
+@export_range(0.5, 12.0) var ripple_period_seconds: float = 2.0
 @export_range(1, 6) var ripple_count: int = 3
 @export var ripple_color: Color = Color(0.3, 1.0, 1.0, 0.6)
 @export var ripple_max_radius: float = 340.0
@@ -130,6 +166,15 @@ func _draw_rings(center: Vector2) -> void:
 	if ring_count <= 0:
 		return
 
+	if three_rings_enabled:
+		if ring_trail_enabled:
+			for k in range(ring_trail_copies, 0, -1):
+				var f: float = float(k) / float(ring_trail_copies)
+				var fade3: float = ring_trail_strength * (1.0 - float(k) / float(ring_trail_copies + 1)) * 4.0 / float(ring_trail_copies)
+				_draw_three_rings(center, _time - ring_trail_seconds * f, fade3, [true, false, false])
+				_draw_three_rings(center, _time - three_ring_horizontal_trail_seconds * f, fade3, [false, true, true])
+		_draw_three_rings(center, _time, -1.0)
+		return
 	if ring_trail_enabled:
 		for k in range(ring_trail_copies, 0, -1):
 			var back: float = ring_trail_seconds * float(k) / float(ring_trail_copies)
@@ -137,6 +182,65 @@ func _draw_rings(center: Vector2) -> void:
 			var fade: float = ring_trail_strength * (1.0 - float(k) / float(ring_trail_copies + 1)) * 4.0 / float(ring_trail_copies)
 			_draw_ring_pair(center, _time - back, fade)
 	_draw_ring_pair(center, _time, -1.0)
+
+## 0..1 eased progress: u - k * sin(2 pi u) / (2 pi).
+static func ring_ease(u: float, k: float) -> float:
+	return u - k * sin(TAU * u) / TAU
+
+## The three rings' angles (radians) at a time: [vertical, front_back, left_right].
+func three_ring_angles(at_time: float) -> Array:
+	var u := fposmod((at_time + three_ring_time_offset) / maxf(0.1, three_ring_cycle_seconds), 1.0)
+	var h := -PI * ring_ease(u, three_ring_horizontal_ease)
+	var uv := fposmod(u + three_ring_vertical_phase, 1.0)
+	var v := PI * 0.5 + PI * ring_ease(uv, three_ring_vertical_ease)
+	return [v, h, h]
+
+## Screen points of one ring: kind 0 vertical, 1 front/back, 2 left/right.
+func three_ring_points(center: Vector2, kind: int, angle: float, segments: int = 96) -> PackedVector2Array:
+	var e: float = deg_to_rad(ring_view_elevation_deg)
+	var ca := cos(angle)
+	var sa := sin(angle)
+	var r := sphere_radius
+	var c0 := center
+	if kind == 0:
+		r *= three_ring_vertical_scale
+		c0 += Vector2(0.0, -three_ring_vertical_lift * sphere_radius)
+	var pts := PackedVector2Array()
+	for k in range(segments + 1):
+		var t: float = float(k) / float(segments) * TAU
+		var c := cos(t)
+		var s := sin(t)
+		var p: Vector3
+		match kind:
+			0: p = Vector3(s * sa, c, s * ca)
+			1: p = Vector3(c * ca, c * sa, s)
+			_: p = Vector3(c, -s * sa, s * ca)
+		if kind == 0 and three_ring_vertical_upright:
+			pts.append(c0 + Vector2(p.x, -p.y) * r)
+		else:
+			pts.append(c0 + Vector2(p.x, -(p.y * cos(e) - p.z * sin(e))) * r)
+	return pts
+
+func _draw_three_rings(center: Vector2, at_time: float, fade: float, only: Array = [true, true, true]) -> void:
+	var ang := three_ring_angles(at_time)
+	var shows := [three_ring_show_vertical, three_ring_show_front_back, three_ring_show_left_right]
+	var strengths := [three_ring_vertical_strength, three_ring_front_back_strength, three_ring_left_right_strength]
+	for kind in range(3):
+		if not shows[kind] or not only[kind]:
+			continue
+		var pts := three_ring_points(center, kind, ang[kind])
+		var g := ring_glow_color
+		g.a *= strengths[kind]
+		if fade >= 0.0:
+			g.a *= fade
+			draw_polyline(pts, g, ring_glow_thickness, true)
+			continue
+		if ring_trail_enabled:
+			g.a *= ring_trail_glow_scale
+		var core := ring_color
+		core.a *= strengths[kind]
+		draw_polyline(pts, g, ring_glow_thickness, true)
+		draw_polyline(pts, core, ring_thickness, true)
 
 func _draw_ring_pair(center: Vector2, at_time: float, fade: float) -> void:
 	# spin_angle is the shared rotation phase driven by ring_rotation_seconds.

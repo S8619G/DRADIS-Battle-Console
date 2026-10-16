@@ -28,6 +28,7 @@ const Icons = preload("res://scripts/DradisContactIcons.gd")
 const BattleAudio = preload("res://scripts/BattleAudio.gd")
 const FirewallAudio = preload("res://scripts/FirewallAudio.gd")
 const ScopeShape = preload("res://scripts/ScopeShape.gd")
+const ProtectAudio = preload("res://scripts/ProtectAudio.gd")
 const ACTIVE_KINDS := ["viper", "raptor", "raider", "heavy_raider", "unknown", "baseship", "missile"]
 const CAPITAL_KINDS := ["baseship", "resurrection_ship"]
 const SMALL_HOSTILE_KINDS := ["raider"]
@@ -404,6 +405,104 @@ var evade_outside := 0
 @export var civilian_damaged_color := Color(0.28, 0.32, 0.46)
 @export_range(0.0, 100.0) var civilian_critical_percent: float = 25.0
 @export_range(0.5, 10.0) var civilian_blink_hz: float = 3.0
+## 1.2.9: every switch below off = the 1.2.8 round; the console scene turns them on.
+## Nothing here changes the main game.
+@export_subgroup("Round Sounds 1.2.9")
+## Battle sounds for the round only: a tick on each Viper hit, a louder Raider
+## explosion, a warning when a ship is first attacked and when it reaches Critical
+## Percent, a boom sized by the civilian ship lost, and the fighter-lost boom for a
+## Viper downed by a Raider.
+@export var protect_round_sounds: bool = false
+@export_range(-40.0, 0.0) var protect_viper_hit_volume_db: float = -22.0
+@export_range(-40.0, 0.0) var protect_raider_kill_volume_db: float = -13.0
+@export_range(-40.0, 0.0) var protect_ship_attacked_volume_db: float = -14.0
+@export_range(-40.0, 0.0) var protect_ship_critical_volume_db: float = -12.0
+@export_range(-40.0, 0.0) var protect_small_ship_lost_volume_db: float = -14.0
+@export_range(-40.0, 0.0) var protect_medium_ship_lost_volume_db: float = -11.0
+@export_range(-40.0, 0.0) var protect_large_ship_lost_volume_db: float = -8.0
+@export_range(-40.0, 0.0) var protect_viper_lost_volume_db: float = -15.0
+@export_subgroup("Damaged Ships 1.2.9")
+## On = a damaged ship keeps Civilian Color (no fade to Damaged Color), shows a hull
+## bar under its label and flashes white briefly each time a Raider hits it.
+@export var civilian_hull_bar: bool = false
+@export_range(10.0, 80.0) var civilian_hull_bar_width: float = 38.0
+@export_range(0.0, 0.6) var civilian_hit_flash_seconds: float = 0.15
+@export_subgroup("Round Counter 1.2.9")
+## On = during the round the alert box shows SHIPS n OF m, RAIDERS n LEFT and TIME m:ss.
+@export var protect_round_counter: bool = false
+@export_subgroup("Challenge Mix 1.2.9")
+## On = each round picks some challenges at random: overlapping Raider waves, fewer
+## Vipers, and Raiders ganging up. How many: the set number, Easy one fewer, Hard one
+## more, from 0 up to Challenge Max.
+@export var protect_challenge_mix: bool = false
+@export_range(0, 3) var protect_challenge_max: int = 3
+@export_range(-3, 0) var easy_protect_challenge_change: int = -1
+@export_range(0, 3) var hard_protect_challenge_change: int = 1
+## Waves: the Raiders arrive in this many groups; the next group jumps in this many
+## seconds after the last one, without waiting for the scope to clear.
+@export_range(2, 4) var protect_wave_groups_min: int = 2
+@export_range(2, 4) var protect_wave_groups_max: int = 3
+@export_range(2.0, 30.0) var protect_wave_gap_min: float = 6.0
+@export_range(2.0, 30.0) var protect_wave_gap_max: float = 10.0
+## Fewer Vipers: this many fewer launches than Raiders, never more than a third of them.
+@export_range(0, 4) var protect_fewer_vipers_min: int = 1
+@export_range(0, 4) var protect_fewer_vipers_max: int = 2
+## Gang up: Raiders prefer a ship already under attack (Claim Pull per Raider on it)
+## and the most damaged ship (Damage Pull x hull lost), against plain distance.
+@export_range(0.0, 2.0) var protect_gang_claim_pull: float = 0.5
+@export_range(0.0, 2.0) var protect_gang_damage_pull: float = 0.3
+## "A bit more danger" (1.2.9), on Normal from Extra Raiders From Set on: this many
+## extra Raiders (within Raiders Cap), and the civilian kill time multiplied by Later
+## Kill Time Factor (below 1 = Raiders destroy ships faster; 1 = as in 1.2.8).
+## Tick More Danger On Hard to add the same on Hard. Easy never gets it.
+@export_range(1, 20) var protect_extra_raiders_from_set: int = 3
+@export_range(0, 6) var protect_extra_raiders: int = 0
+@export_range(0.3, 1.0) var protect_later_kill_time_factor: float = 1.0
+@export var protect_more_danger_on_hard: bool = false
+@export_subgroup("Dogfights 1.2.9")
+## On = Raiders and Vipers dogfight: a Raider engaged by a Viper may break off to
+## fight it, hits land only from behind, and a Raider behind a Viper can shoot it
+## down (this replaces the one return-fire roll per Raider).
+@export var protect_dogfights: bool = false
+## Share of Raiders that break off when a Viper engages them (the rest keep attacking the ship).
+@export_range(0.0, 1.0) var protect_breakoff_chance: float = 0.6
+## A Viper this close (scope radii) that is chasing a Raider counts as engaging it.
+@export_range(0.02, 0.5) var protect_engage_radius: float = 0.14
+## Wingman help, both sides: once a second, a free fighter within Help Range may go
+## after the attacker of a nearby friend with this chance.
+@export_range(0.0, 1.0) var protect_help_chance: float = 0.3
+@export_range(0.02, 0.6) var protect_help_range: float = 0.28
+## "Behind": within Tail Range of the target and inside its tail cone (Tail Cos,
+## 1 = straight behind only, 0 = anywhere in the rear half).
+@export_range(0.02, 0.3) var protect_tail_range: float = 0.07
+@export_range(-1.0, 1.0) var protect_tail_cos: float = 0.35
+## A Raider behind a Viper fires every Shot Gap seconds; each shot downs the Viper
+## with this chance.
+@export_range(0.0, 1.0) var protect_viper_loss_chance: float = 0.07
+@export_range(0.1, 5.0) var protect_raider_shot_gap: float = 0.7
+## Vipers ignore their sortie time in the round and fly home when it ends.
+@export var protect_vipers_stay_out: bool = false
+## Labels that would sit on top of another label move down a line (or are left out),
+## so bunched-up dogfights stay readable. Civilian ship labels always show.
+@export var protect_label_declutter: bool = false
+@export_subgroup("Smarter Ships 1.2.9")
+## How fast large civilian ships drift away from attackers (0 = they stay put).
+@export_range(0.0, 0.1) var civilian_large_evade_speed: float = 0.0
+## Self-repair: after Repair Delay seconds with no Raider attacking, a ship regains
+## Repair Rate of its hull per second, up to Repair Cap.
+@export var civilian_self_repair: bool = false
+@export_range(0.0, 20.0) var civilian_repair_delay: float = 3.0
+@export_range(0.0, 0.5) var civilian_repair_rate: float = 0.04
+@export_range(0.0, 1.0) var civilian_repair_cap: float = 0.75
+@export_subgroup("Repair Raptor 1.2.9")
+## A bonus Raptor that flies to the most damaged ship and repairs it (up to 100%),
+## then the next. From Raptor Set on (any set on Hard), in rounds with at least
+## Raptor Challenges challenges, with Raptor Chance.
+@export var protect_repair_raptor: bool = false
+@export_range(1, 20) var protect_raptor_from_set: int = 3
+@export_range(0, 3) var protect_raptor_min_challenges: int = 2
+@export_range(0.0, 1.0) var protect_raptor_chance: float = 0.5
+@export_range(0.0, 0.5) var protect_raptor_repair_rate: float = 0.08
 
 @export_group("Resurrection Ship")
 @export var resurrection_enabled: bool = true
@@ -981,6 +1080,29 @@ var fleet_lost_player: AudioStreamPlayer
 var protect_civilian_kinds: Array[String] = []
 ## 1.2.3: Vipers lost to Raider return fire this round.
 var protect_vipers_lost_to_fire: int = 0
+## 1.2.9 round state: challenges picked, wave groups, Vipers held back, dogfight and
+## repair counters, and sound counters (for the checks).
+var protect_challenges: Array[String] = []
+var protect_wave_groups: int = 1
+var protect_wave_gap: float = 0.0
+var protect_group_index: int = 0
+var protect_next_group_at: float = 0.0
+var protect_short_vipers: int = 0
+var protect_help_timer: float = 0.0
+var protect_breakoffs: int = 0
+var protect_dogfight_hits: int = 0
+var protect_dogfight_vipers_lost: int = 0
+var protect_helps: int = 0
+var protect_repaired: float = 0.0
+var protect_raptor_repaired: float = 0.0
+var protect_raptor_rounds: int = 0
+var protect_sound_counts: Dictionary = {}
+var protect_boom_size: String = ""
+var protect_tick_player: AudioStreamPlayer
+var protect_attacked_player: AudioStreamPlayer
+var protect_critical_player: AudioStreamPlayer
+var protect_medium_boom_player: AudioStreamPlayer
+var _protect_label_rects: Array[Rect2] = []
 ## Extra Vipers or Raptors still out when their boost ends; the limit tapers as they land.
 var viper_limit_hold: int = 0
 var raptor_limit_hold: int = 0
@@ -1938,7 +2060,8 @@ func _update_vipers(delta: float) -> void:
 		viper.heavy_fire_remaining = maxf(0.0, viper.get("heavy_fire_remaining", 0.0) - delta)
 		viper.raider_fire_remaining = maxf(0.0, viper.get("raider_fire_remaining", 0.0) - delta)
 		viper.res_fire_remaining = maxf(0.0, viper.get("res_fire_remaining", 0.0) - delta)
-		if viper.age >= sortie_seconds:
+		# 1.2.9: in Protect the fleet Vipers can stay out all round (Vipers Stay Out).
+		if viper.age >= sortie_seconds and not (protect_vipers_stay_out and protect_active()):
 			viper.phase = "return"
 			viper.target_id = ""
 		if viper.phase == "return":
@@ -1965,6 +2088,10 @@ func _update_vipers(delta: float) -> void:
 			viper.target_id = target.id
 			if squadrons_split_to_engage:
 				viper_claims[target.id] = int(viper_claims.get(target.id, 0)) + 1
+			# 1.2.9: Protect the fleet dogfights (round Raiders only).
+			if protect_dogfights and target.get("phase", "") == "protect":
+				_protect_viper_dogfight(viper, target, delta, removed)
+				continue
 			_steer(viper, target.position, viper_speed * fighter_speed_factor(), delta)
 			if target.kind == "resurrection_ship":
 				if viper.position.distance_to(target.position) <= 0.08 and viper.res_fire_remaining <= 0.0:
@@ -1989,6 +2116,8 @@ func _update_vipers(delta: float) -> void:
 					target.viper_hits = int(target.get("viper_hits", raider_viper_hits)) - 1
 					if target.viper_hits > 0:
 						impacts.append({"position": target.position, "age": 0.0})
+						if target.get("phase", "") == "protect":
+							_play_protect_sound("viper_hit")
 						continue
 				# Prototype outcome: reaching a hostile clears that contact.
 				removed.append(target.id)
@@ -2074,6 +2203,7 @@ func _draw() -> void:
 	ordered.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		return a.position.z > b.position.z)
 	var font := ThemeDB.fallback_font
+	_protect_reserve_labels(font)
 	# 1.06: ships first, then explosions, then every missile, nuke and flak shot
 	# on top so they are never hidden on a crowded scope.
 	var projectiles: Array = []
@@ -2182,7 +2312,13 @@ func _draw_contact(contact: Dictionary, font: Font) -> void:
 		elif contact.kind == "heavy_raider" and contact.get("phase", "") in ["hacking", "draining", "emp"]:
 			# 1.09: above a parked Heavy Raider, clear of the ship console below it.
 			label_point = point + Vector2(-label_size.x * 0.5, -24.0 * marker_scale)
-		draw_string_outline_and_text(font, label_point, text, font_size, label_color(color))
+		# 1.2.9: Protect the fleet labels move clear of each other (civilian labels stay put).
+		if protect_label_declutter and protect_active() and contact.get("faction", "") != "civilian":
+			label_point = _protect_place_label(label_point, label_size)
+		if label_point.is_finite():
+			draw_string_outline_and_text(font, label_point, text, font_size, label_color(color))
+		if civilian_hull_bar and contact.get("faction", "") == "civilian":
+			_draw_civilian_hull_bar(contact, marker_scale, label_point, label_size)
 	if contact.kind == "heavy_raider" and contact.get("phase", "") == "emp":
 		_draw_emp_sparks(point, marker_scale, contact)
 
@@ -2688,6 +2824,9 @@ func _update_raptors(delta: float) -> void:
 	for raptor in contacts.duplicate():
 		if raptor.kind != "raptor":
 			continue
+		# 1.2.9: the Protect the fleet repair Raptor flies its own route.
+		if raptor.get("phase", "") == "protect_repair":
+			continue
 		raptor.fire_timer = maxf(0.0, raptor.fire_timer - delta)
 		raptor.heavy_fire_remaining = maxf(0.0, raptor.get("heavy_fire_remaining", 0.0) - delta)
 		raptor.nuke_fire_remaining = maxf(0.0, raptor.get("nuke_fire_remaining", 0.0) - delta)
@@ -3115,7 +3254,9 @@ func _explode(at: Vector3, kind: String) -> void:
 	if kind == "missile":
 		_play_boom(missile_boom_player, "missile", missile_boom_volume_db)
 	elif kind == "craft" or kind == "own_craft":
-		_play_boom(craft_boom_player, "craft", craft_boom_volume_db)
+		# 1.2.9: Protect the fleet plays its own volumes and ship-sized booms.
+		if not _play_protect_boom(kind):
+			_play_boom(craft_boom_player, "craft", craft_boom_volume_db)
 	elif kind == "heavy":
 		_play_boom(heavy_boom_player, "heavy", heavy_boom_volume_db)
 	elif kind == "capital":
@@ -3386,7 +3527,12 @@ func _draw_viper_squadrons(font: Font) -> void:
 			if show_full_tags and weakest < 100:
 				text += " %d%%" % weakest
 			var label_size := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, label_font_size)
-			draw_string_outline_and_text(font, point + Vector2(-label_size.x * 0.5, 29.0 * marker_scale), text, label_font_size, label_color(color))
+			var label_point := point + Vector2(-label_size.x * 0.5, 29.0 * marker_scale)
+			# 1.2.9: Protect the fleet labels move clear of each other.
+			if protect_label_declutter and protect_active():
+				label_point = _protect_place_label(label_point, label_size)
+			if label_point.is_finite():
+				draw_string_outline_and_text(font, label_point, text, label_font_size, label_color(color))
 
 func pending_heavies() -> int:
 	var total := 0
@@ -4556,7 +4702,8 @@ func boost_active(name: String) -> bool:
 func viper_limit() -> int:
 	# 1.2.2: in Protect the fleet, Viper launches can't exceed the Raider count.
 	if protect_active():
-		return count_vipers() + maxi(0, protect_raiders_total - protect_vipers_launched)
+		# 1.2.9 Fewer Vipers: the round can hold back a few launches.
+		return count_vipers() + maxi(0, protect_raiders_total - protect_short_vipers - protect_vipers_launched)
 	var limit := max_vipers + (bonus_extra_vipers if boost_active("VIPERS") else 0)
 	return maxi(limit, mini(viper_limit_hold, count_vipers()))
 
@@ -4957,17 +5104,28 @@ func next_round_name() -> String:
 func protect_raider_count() -> int:
 	var cap := maxi(2, protect_raiders_cap)
 	var base := protect_first_raiders + protect_raiders_step * (maxi(1, sets_completed) - 1)
+	# 1.2.9: a few extra Raiders from Extra Raiders From Set on (Normal; Hard if ticked).
+	if protect_extra_raiders > 0 and _protect_more_danger():
+		base += protect_extra_raiders
 	match clampi(active_difficulty, 0, 2):
 		0: return clampi(mini(cap, base) + easy_protect_raider_change, 2, cap)
 		2: return clampi(base + hard_protect_raider_change, 2, cap)
 	return clampi(base, 2, cap)
+
+## 1.2.9: true when the "a bit more danger" values apply to this round.
+func _protect_more_danger() -> bool:
+	var level_ok := active_difficulty == 1 or (active_difficulty == 2 and protect_more_danger_on_hard)
+	return level_ok and maxi(1, sets_completed) >= protect_extra_raiders_from_set
 
 func civilian_kill_seconds() -> float:
 	var base: float = [easy_civilian_kill_seconds, normal_civilian_kill_seconds, hard_civilian_kill_seconds][clampi(active_difficulty, 0, 2)]
 	# 1.2.3: shorter by Kill Time Step of the base per set after set 1, down to the floor.
 	var later_sets := maxi(1, sets_completed) - 1
 	var shortened := base * (1.0 - maxf(0.0, protect_kill_time_step) * later_sets)
-	return maxf(1.0, maxf(minf(base, protect_kill_time_floor), shortened))
+	var seconds := maxf(1.0, maxf(minf(base, protect_kill_time_floor), shortened))
+	if protect_later_kill_time_factor < 1.0 and _protect_more_danger():
+		seconds = maxf(1.0, seconds * protect_later_kill_time_factor)
+	return seconds
 
 ## 1.2.3: Viper hits a Raider takes in Protect the fleet, growing by set.
 func protect_raider_hits() -> int:
@@ -4978,6 +5136,12 @@ func protect_raider_hits() -> int:
 func civilian_display_color(contact: Dictionary) -> Color:
 	var left := clampf(float(contact.get("hull", 1.0)), 0.0, 1.0)
 	var color := civilian_damaged_color.lerp(civilian_color, left)
+	# 1.2.9: with the hull bar the ship keeps its colour and flashes white when hit.
+	if civilian_hull_bar:
+		var flash := 0.0
+		if civilian_hit_flash_seconds > 0.0:
+			flash = clampf(float(contact.get("flash_t", 0.0)) / civilian_hit_flash_seconds, 0.0, 1.0)
+		color = civilian_color.lerp(Color.WHITE, 0.85 * flash)
 	if left * 100.0 <= civilian_critical_percent:
 		color.a = 1.0 if int(battle_time * civilian_blink_hz * 2.0) % 2 == 0 else 0.3
 	return color
@@ -5018,6 +5182,20 @@ func _reset_protect_state() -> void:
 	rest_after_protect = false
 	protect_civilian_kinds.clear()
 	protect_vipers_lost_to_fire = 0
+	protect_challenges.clear()
+	protect_wave_groups = 1
+	protect_wave_gap = 0.0
+	protect_group_index = 0
+	protect_next_group_at = 0.0
+	protect_short_vipers = 0
+	protect_help_timer = 0.0
+	protect_breakoffs = 0
+	protect_dogfight_hits = 0
+	protect_dogfight_vipers_lost = 0
+	protect_helps = 0
+	protect_repaired = 0.0
+	protect_raptor_repaired = 0.0
+	protect_boom_size = ""
 
 func _shuffled(values: Array) -> Array:
 	var items := values.duplicate()
@@ -5065,6 +5243,8 @@ func _start_protect() -> void:
 			"position": at, "start": at, "finish": at, "age": 0.0, "progress": 0.0,
 			"phase": "", "velocity": Vector3.ZERO, "hull": 1.0})
 	protect_spawn_timer = 0.0
+	_roll_protect_challenges()
+	_ensure_protect_audio()
 	_set_status("PROTECT THE FLEET | %d CIVILIAN SHIPS | %d RAIDERS | VIPERS ONLY" % [protect_civilians_total, protect_raiders_total], 5.0)
 	battle_event.emit("protect the fleet start | %d civilian ships (%s) | %d Raiders | kill time %ds" % [
 		protect_civilians_total, ", ".join(protect_civilian_kinds), protect_raiders_total, int(civilian_kill_seconds())])
@@ -5074,8 +5254,19 @@ func _update_protect(delta: float) -> void:
 		_spawn_protect_patrol()
 	protect_elapsed += delta
 	_update_civilian_evasion(delta)
+	_update_protect_extras(delta)
 	protect_spawn_timer -= delta
-	if protect_raiders_spawned < protect_raiders_total and protect_spawn_timer <= 0.0:
+	if protect_wave_groups > 1:
+		# 1.2.9 Waves: groups jump in every Wave Gap seconds, scope clear or not.
+		if protect_raiders_spawned < protect_raiders_total and protect_elapsed >= protect_next_group_at and protect_spawn_timer <= 0.0:
+			var group_end := _protect_group_end(protect_group_index)
+			for slot in range(mini(maxi(1, protect_raider_group_size), group_end - protect_raiders_spawned)):
+				_spawn_protect_raider(slot == 0)
+			if protect_raiders_spawned >= group_end:
+				protect_group_index += 1
+				protect_next_group_at = protect_elapsed + protect_wave_gap
+			protect_spawn_timer = maxf(0.2, protect_raider_group_gap)
+	elif protect_raiders_spawned < protect_raiders_total and protect_spawn_timer <= 0.0:
 		for slot in range(mini(maxi(1, protect_raider_group_size), protect_raiders_total - protect_raiders_spawned)):
 			_spawn_protect_raider(slot == 0)
 		protect_spawn_timer = maxf(0.2, protect_raider_group_gap)
@@ -5099,7 +5290,7 @@ func _spawn_protect_raider(announce: bool) -> void:
 		"approach_point": start, "velocity": Vector3.ZERO, "health": 1,
 		"attack_cooldown": 0.0, "next_battery_shot": 0.0, "civ_target": "",
 		"viper_hits": protect_raider_hits(), "max_viper_hits": protect_raider_hits(), "return_fire_done": false,
-		"hold": protect_jump_in_hold})
+		"hold": protect_jump_in_hold, "dog_target": "", "dog_decided": false, "presses": false, "shot_timer": 0.0})
 	protect_raiders_spawned += 1
 	if announce:
 		_announce_contact(id, "raider", "hostile")
@@ -5129,6 +5320,9 @@ func _protect_pick_civilian(raider: Dictionary) -> Dictionary:
 			if other.id != raider.id and other.get("civ_target", "") == ship.id:
 				claims += 1
 		var rank: float = raider.position.distance_to(ship.position) + 0.6 * claims
+		# 1.2.9 Gang up: prefer the ship already under attack and the most damaged one.
+		if protect_challenges.has("gang"):
+			rank = raider.position.distance_to(ship.position) - protect_gang_claim_pull * claims - protect_gang_damage_pull * (1.0 - float(ship.get("hull", 1.0)))
 		if rank < best_score:
 			best_score = rank
 			best = ship
@@ -5157,7 +5351,7 @@ func _update_civilian_evasion(delta: float) -> void:
 		if ship.get("faction", "") != "civilian":
 			continue
 		var size_class := civilian_size_class(ship.kind)
-		var speed: float = {"large": 0.0, "medium": civilian_medium_evade_speed, "small": civilian_small_evade_speed}[size_class]
+		var speed: float = {"large": civilian_large_evade_speed, "medium": civilian_medium_evade_speed, "small": civilian_small_evade_speed}[size_class]
 		var threat := Vector3.ZERO
 		var near := 0
 		for raider in contacts:
@@ -5211,6 +5405,9 @@ func _update_protect_raider(raider: Dictionary, delta: float) -> void:
 		raider.hold = float(raider.hold) - delta
 		if raider.hold > 0.0:
 			return
+	# 1.2.9 Dogfights: a Raider fighting a Viper leaves the ships alone.
+	if protect_dogfights and _protect_raider_dogfight(raider, delta):
+		return
 	var target := find_contact(raider.get("civ_target", ""))
 	if target.is_empty() or target.get("faction", "") != "civilian":
 		target = _protect_pick_civilian(raider)
@@ -5229,6 +5426,11 @@ func _update_protect_raider(raider: Dictionary, delta: float) -> void:
 		if raider.attack_cooldown <= 0.0:
 			raider.attack_cooldown = 0.6
 			impacts.append({"position": target.position, "age": 0.0})
+			# 1.2.9: a brief white flash on each hit, and a warning on the first attack.
+			target.flash_t = civilian_hit_flash_seconds
+			if not target.get("attack_warned", false):
+				target.attack_warned = true
+				_play_protect_sound("ship_attacked")
 		if protect_damage_stack_cap > 0:
 			if float(target.get("stack_key", -1.0)) != protect_elapsed:
 				target.stack_key = protect_elapsed
@@ -5241,9 +5443,15 @@ func _update_protect_raider(raider: Dictionary, delta: float) -> void:
 func _damage_civilian(ship: Dictionary, amount: float) -> void:
 	ship.hull = maxf(0.0, float(ship.get("hull", 1.0)) - amount)
 	if ship.hull > 0.0:
+		# 1.2.9: one warning when the ship first reaches Critical Percent.
+		if ship.hull * 100.0 <= civilian_critical_percent and not ship.get("critical_warned", false):
+			ship.critical_warned = true
+			_play_protect_sound("ship_critical")
 		return
 	protect_lost += 1
+	protect_boom_size = civilian_size_class(ship.kind)
 	_explode(ship.position, "own_craft")
+	protect_boom_size = ""
 	_remove_contact(ship.id)
 	_set_status("CIVILIAN SHIP LOST | %d OF %d LEFT" % [civilians_left(), protect_civilians_total], 3.0)
 	battle_event.emit("civilian ship lost (%s) | %d of %d left" % [ship.kind, civilians_left(), protect_civilians_total])
@@ -5276,6 +5484,9 @@ func _end_protect(reason: String, jumped: bool = false) -> void:
 			contacts.remove_at(index)
 		elif contact.get("faction", "") == "civilian":
 			contacts.remove_at(index)
+		elif contact.get("phase", "") == "protect_repair":
+			# 1.2.9: the repair Raptor leaves with the civilian ships.
+			contacts.remove_at(index)
 		elif Icons.is_viper(contact.kind):
 			contact.phase = "return"
 			contact.target_id = ""
@@ -5291,6 +5502,336 @@ func _end_protect(reason: String, jumped: bool = false) -> void:
 	battle_event.emit("protect the fleet complete (%s) | saved %d of %d | hull %d%% | Raiders destroyed %d of %d, jumped away %d | Vipers launched %d | bonus %d" % [
 		reason, protect_saved, protect_civilians_total, protect_hull_kept, protect_raiders_destroyed, protect_raiders_spawned,
 		protect_raiders_escaped, protect_vipers_launched, last_protect_bonus])
+
+# ------------------------------------------------------------------
+# 1.2.9 Protect the fleet: challenge mix, dogfights, smarter ships, repair Raptor,
+# round sounds, damaged-ship bars and label spacing. Used in the round only.
+# ------------------------------------------------------------------
+
+## Challenges this round: the set number, Easy one fewer, Hard one more (0 to Challenge Max).
+func protect_challenge_count() -> int:
+	var count := maxi(1, sets_completed)
+	match clampi(active_difficulty, 0, 2):
+		0: count += easy_protect_challenge_change
+		2: count += hard_protect_challenge_change
+	return clampi(count, 0, clampi(protect_challenge_max, 0, 3))
+
+## Plain names of this round's challenges, for the log and the checks.
+func protect_challenge_names() -> String:
+	if protect_challenges.is_empty():
+		return "none"
+	var names: Array[String] = []
+	for item in protect_challenges:
+		names.append({"waves": "Raiders in %d waves %ds apart" % [protect_wave_groups, roundi(protect_wave_gap)],
+			"fewer": "%d fewer Vipers" % protect_short_vipers, "gang": "Raiders gang up"}[item])
+	return ", ".join(names)
+
+func _roll_protect_challenges() -> void:
+	if protect_challenge_mix:
+		var picks := _shuffled(["waves", "fewer", "gang"])
+		for index in range(protect_challenge_count()):
+			protect_challenges.append(picks[index])
+		if protect_challenges.has("waves"):
+			var low := clampi(mini(protect_wave_groups_min, protect_wave_groups_max), 2, 4)
+			var high := clampi(maxi(protect_wave_groups_min, protect_wave_groups_max), low, 4)
+			protect_wave_groups = clampi(rng.randi_range(low, high), 1, maxi(1, protect_raiders_total))
+			protect_wave_gap = rng.randf_range(minf(protect_wave_gap_min, protect_wave_gap_max), maxf(protect_wave_gap_min, protect_wave_gap_max))
+		if protect_challenges.has("fewer"):
+			var fewest := mini(protect_fewer_vipers_min, protect_fewer_vipers_max)
+			var most := maxi(protect_fewer_vipers_min, protect_fewer_vipers_max)
+			protect_short_vipers = mini(rng.randi_range(fewest, most), floori(protect_raiders_total / 3.0))
+	var raptor := false
+	if protect_repair_raptor and protect_challenges.size() >= protect_raptor_min_challenges \
+			and (maxi(1, sets_completed) >= protect_raptor_from_set or active_difficulty == 2):
+		raptor = rng.randf() < clampf(protect_raptor_chance, 0.0, 1.0)
+	if raptor:
+		_spawn_repair_raptor()
+	battle_event.emit("protect the fleet challenges | %s%s" % [protect_challenge_names(), " | repair Raptor" if raptor else ""])
+
+## Last Raider number (1-based count) in wave group index.
+func _protect_group_end(index: int) -> int:
+	if protect_wave_groups <= 1:
+		return protect_raiders_total
+	return mini(protect_raiders_total, ceili(float(protect_raiders_total) * float(index + 1) / float(protect_wave_groups)))
+
+func _spawn_repair_raptor() -> void:
+	var at := own_ship_position + Vector3(0.0, 0.1, 0.0)
+	contacts.append({"id": _new_id("R"), "kind": "raptor", "faction": "friendly", "position": at,
+		"start": at, "finish": at, "age": 0.0, "progress": 0.0, "phase": "protect_repair",
+		"velocity": Vector3.ZERO, "lane": 0.0, "fire_timer": 0.0, "target_id": "",
+		"health": 1, "max_health": 1, "patrol_angle": 0.0})
+	protect_raptor_rounds += 1
+	_set_status("REPAIR RAPTOR LAUNCHED | FIXING DAMAGED SHIPS", 3.0)
+
+## Raptors the player launched (the Protect the fleet repair Raptor is not one).
+func player_raptor_count() -> int:
+	var total := 0
+	for contact in contacts:
+		if contact.kind == "raptor" and contact.get("phase", "") != "protect_repair":
+			total += 1
+	return total
+
+func repair_raptor() -> Dictionary:
+	for contact in contacts:
+		if contact.get("phase", "") == "protect_repair":
+			return contact
+	return {}
+
+## A Raider is attacking this ship right now (not busy in a dogfight).
+func _protect_ship_attacked(ship: Dictionary) -> bool:
+	for raider in contacts:
+		if raider.get("phase", "") == "protect" and raider.kind == "raider" and raider.get("civ_target", "") == ship.id \
+				and raider.get("dog_target", "") == "" and raider.position.distance_to(ship.position) <= protect_attack_range + 0.03:
+			return true
+	return false
+
+## Hit flashes, self-repair and the repair Raptor, every frame of the round.
+func _update_protect_extras(delta: float) -> void:
+	var worst: Dictionary = {}
+	for ship in contacts:
+		if ship.get("faction", "") != "civilian":
+			continue
+		ship.flash_t = maxf(0.0, float(ship.get("flash_t", 0.0)) - delta)
+		if civilian_self_repair:
+			if _protect_ship_attacked(ship):
+				ship.calm = 0.0
+			else:
+				ship.calm = float(ship.get("calm", 0.0)) + delta
+				if ship.calm >= civilian_repair_delay and float(ship.hull) < civilian_repair_cap:
+					var gain := minf(civilian_repair_rate * delta, civilian_repair_cap - float(ship.hull))
+					ship.hull = float(ship.hull) + gain
+					protect_repaired += gain
+		if float(ship.hull) < 0.98 and (worst.is_empty() or float(ship.hull) < float(worst.hull)):
+			worst = ship
+	var raptor := repair_raptor()
+	if raptor.is_empty():
+		return
+	raptor.age = float(raptor.get("age", 0.0)) + delta
+	var target := find_contact(raptor.get("target_id", ""))
+	if target.is_empty() or target.get("faction", "") != "civilian" or float(target.hull) >= 0.98:
+		target = worst
+		raptor.target_id = "" if target.is_empty() else target.id
+	if target.is_empty():
+		_steer(raptor, own_ship_position + Vector3(0.0, 0.12, 0.0), protect_raider_speed * 0.6, delta)
+		return
+	_steer(raptor, target.position + Vector3(0.04, 0.03, 0.0), protect_raider_speed * 0.7, delta)
+	if raptor.position.distance_to(target.position) < 0.08:
+		var fix := minf(protect_raptor_repair_rate * delta, 1.0 - float(target.hull))
+		target.hull = float(target.hull) + fix
+		protect_raptor_repaired += fix
+
+## The nearest Viper within Engage Radius that is chasing this Raider.
+func _protect_chaser(raider: Dictionary) -> Dictionary:
+	var best: Dictionary = {}
+	var nearest := protect_engage_radius
+	for viper in contacts:
+		if Icons.is_viper(viper.kind) and viper.get("target_id", "") == raider.id:
+			var gap: float = viper.position.distance_to(raider.position)
+			if gap < nearest:
+				nearest = gap
+				best = viper
+	return best
+
+## True when a is behind b: within Tail Range and inside b's tail cone.
+func _protect_on_tail(a: Dictionary, b: Dictionary) -> bool:
+	var gap: Vector3 = b.position - a.position
+	if gap.length() > protect_tail_range:
+		return false
+	var heading: Vector3 = b.get("velocity", Vector3.ZERO)
+	if heading.length() < 0.0001:
+		return true
+	return heading.normalized().dot(gap.normalized()) >= protect_tail_cos
+
+## A Viper chasing a round Raider: helps a wingman, weaves when a Raider is on its
+## tail, and scores hits only from behind.
+func _protect_viper_dogfight(viper: Dictionary, target: Dictionary, delta: float, removed: Array[String]) -> void:
+	viper.help_t = float(viper.get("help_t", 0.0)) - delta
+	if viper.help_t <= 0.0:
+		viper.help_t = 1.0
+		for raider in contacts:
+			if raider.get("phase", "") != "protect" or raider.kind != "raider" or raider.id == target.id or raider.id in removed:
+				continue
+			var prey := find_contact(raider.get("dog_target", ""))
+			if prey.is_empty() or prey.id == viper.id:
+				continue
+			if prey.position.distance_to(viper.position) <= protect_help_range and rng.randf() < protect_help_chance:
+				viper.target_id = raider.id
+				target = raider
+				protect_helps += 1
+				break
+	var threatened := false
+	for raider in contacts:
+		if raider.get("dog_target", "") == viper.id and _protect_on_tail(raider, viper):
+			threatened = true
+	viper.patrol_angle = float(viper.get("patrol_angle", 0.0)) + delta * 3.0
+	var heading: Vector3 = target.get("velocity", Vector3.ZERO)
+	var aim: Vector3 = target.position - (heading.normalized() * 0.03 if heading.length() > 0.0001 else Vector3.ZERO)
+	if threatened:
+		aim += Vector3(-heading.y, heading.x, 0.0).normalized() * sin(viper.patrol_angle) * 0.05
+	_steer(viper, aim, viper_speed * fighter_speed_factor(), delta)
+	if viper.raider_fire_remaining > 0.0 or not _protect_on_tail(viper, target):
+		return
+	viper.raider_fire_remaining = maxf(0.1, raider_viper_hit_interval) * fire_interval_factor()
+	protect_dogfight_hits += 1
+	target.viper_hits = int(target.get("viper_hits", 1)) - 1
+	impacts.append({"position": target.position, "age": 0.0})
+	if target.viper_hits > 0:
+		_play_protect_sound("viper_hit")
+		return
+	removed.append(target.id)
+	_award_destroyed(target)
+	intercepted_count += 1
+	hostile_intercepted.emit(viper.id, target.id)
+	viper.target_id = ""
+
+## A round Raider: breaks off (or not) when a Viper engages it, helps a nearby Raider,
+## and fights from behind. True while it is dogfighting (not attacking a ship).
+func _protect_raider_dogfight(raider: Dictionary, delta: float) -> bool:
+	var foe := find_contact(raider.get("dog_target", ""))
+	if foe.is_empty() or not Icons.is_viper(foe.kind) or foe.get("phase", "") == "return":
+		raider.dog_target = ""
+		var chaser := _protect_chaser(raider)
+		if chaser.is_empty():
+			raider.help_t = float(raider.get("help_t", 0.0)) - delta
+			if raider.help_t <= 0.0:
+				raider.help_t = 1.0
+				for other in contacts:
+					if other.id == raider.id or other.get("phase", "") != "protect" or other.kind != "raider":
+						continue
+					if other.position.distance_to(raider.position) > protect_help_range:
+						continue
+					var other_chaser := _protect_chaser(other)
+					if not other_chaser.is_empty() and rng.randf() < protect_help_chance:
+						raider.dog_target = other_chaser.id
+						protect_helps += 1
+						break
+		else:
+			if not raider.get("dog_decided", false):
+				raider.dog_decided = true
+				raider.presses = rng.randf() >= clampf(protect_breakoff_chance, 0.0, 1.0)
+			if raider.presses:
+				return false
+			raider.dog_target = chaser.id
+			protect_breakoffs += 1
+		foe = find_contact(raider.get("dog_target", ""))
+		if foe.is_empty():
+			return false
+	# Chase the Viper's tail, weaving.
+	raider.patrol_angle += delta * 2.4
+	var heading: Vector3 = foe.get("velocity", Vector3.ZERO)
+	var behind: Vector3 = foe.position - (heading.normalized() * 0.04 if heading.length() > 0.0001 else Vector3.ZERO)
+	var weave := Vector3(cos(raider.patrol_angle), sin(raider.patrol_angle), 0.0) * 0.035
+	_steer(raider, behind + weave, protect_raider_speed * 1.05, delta)
+	raider.shot_timer = float(raider.get("shot_timer", 0.0)) - delta
+	if raider.shot_timer <= 0.0 and _protect_on_tail(raider, foe):
+		raider.shot_timer = maxf(0.1, protect_raider_shot_gap)
+		impacts.append({"position": foe.position, "age": 0.0})
+		if rng.randf() < clampf(protect_viper_loss_chance, 0.0, 1.0):
+			protect_dogfight_vipers_lost += 1
+			protect_vipers_lost_to_fire += 1
+			fighter_losses_by["raider"] += 1
+			battle_event.emit("viper lost in a dogfight in Protect the fleet")
+			_lose_fighter(foe, "VIPER LOST IN DOGFIGHT")
+			raider.dog_target = ""
+	return true
+
+## Round sounds (made once, on the first round).
+func _ensure_protect_audio() -> void:
+	if is_instance_valid(protect_tick_player):
+		return
+	protect_tick_player = _boom_player("ProtectHitTickAudio", ProtectAudio.make_viper_hit_tick(), protect_viper_hit_volume_db)
+	protect_tick_player.max_polyphony = 3
+	protect_attacked_player = _boom_player("ProtectShipAttackedAudio", ProtectAudio.make_ship_attacked(), protect_ship_attacked_volume_db)
+	protect_critical_player = _boom_player("ProtectShipCriticalAudio", ProtectAudio.make_ship_critical(), protect_ship_critical_volume_db)
+	protect_medium_boom_player = _boom_player("ProtectMediumBoomAudio", ProtectAudio.make_medium_ship_boom(), protect_medium_ship_lost_volume_db)
+
+func _play_protect_sound(which: String) -> void:
+	if not protect_round_sounds or not protect_active():
+		return
+	var player: AudioStreamPlayer = {"viper_hit": protect_tick_player, "ship_attacked": protect_attacked_player,
+		"ship_critical": protect_critical_player}.get(which, null)
+	if not is_instance_valid(player):
+		return
+	player.volume_db = {"viper_hit": protect_viper_hit_volume_db, "ship_attacked": protect_ship_attacked_volume_db,
+		"ship_critical": protect_ship_critical_volume_db}[which]
+	player.play()
+	protect_sound_counts[which] = int(protect_sound_counts.get(which, 0)) + 1
+
+## Explosion sound in the round: Raider and Viper booms at their own volume, civilian
+## ships by size. False outside the round (the normal boom plays).
+func _play_protect_boom(kind: String) -> bool:
+	if not protect_round_sounds or not protect_active():
+		return false
+	var which := "raider_kill" if kind == "craft" else "viper_lost"
+	var player := craft_boom_player
+	var volume := protect_raider_kill_volume_db if kind == "craft" else protect_viper_lost_volume_db
+	match protect_boom_size:
+		"small":
+			which = "small_ship_lost"
+			player = heavy_boom_player
+			volume = protect_small_ship_lost_volume_db
+		"medium":
+			which = "medium_ship_lost"
+			player = protect_medium_boom_player
+			volume = protect_medium_ship_lost_volume_db
+		"large":
+			which = "large_ship_lost"
+			player = capital_boom_player
+			volume = protect_large_ship_lost_volume_db
+	_play_boom(player, which, volume)
+	protect_sound_counts[which] = int(protect_sound_counts.get(which, 0)) + 1
+	return true
+
+## Hull bar under a civilian ship's label (Civilian Color; the filled part is the hull left).
+func _draw_civilian_hull_bar(ship: Dictionary, marker_scale: float, label_point: Vector2, label_size: Vector2) -> void:
+	var bar := _civilian_hull_bar_rect(marker_scale, label_point, label_size)
+	var hull := clampf(float(ship.get("hull", 1.0)), 0.0, 1.0)
+	draw_rect(bar, Color(0.0, 0.0, 0.0, 0.85), true)
+	draw_rect(bar, Color(civilian_color, 0.30), true)
+	draw_rect(Rect2(bar.position - Vector2(1, 1), bar.size + Vector2(2, 2)), Color(civilian_color, 0.55), false, 1.0)
+	draw_rect(Rect2(bar.position, Vector2(bar.size.x * hull, bar.size.y)), civilian_color.lerp(Color.WHITE, 0.15), true)
+
+func _civilian_hull_bar_rect(marker_scale: float, label_point: Vector2, label_size: Vector2) -> Rect2:
+	var width := civilian_hull_bar_width * marker_scale
+	return Rect2(label_point + Vector2((label_size.x - width) * 0.5, 5.0 * marker_scale), Vector2(width, maxf(2.0, 3.0 * marker_scale)))
+
+## At the start of each draw in the round: civilian labels and hull bars take their
+## places first, so fighter labels move around them.
+func _protect_reserve_labels(font: Font) -> void:
+	_protect_label_rects.clear()
+	if not protect_label_declutter or not protect_active() or not show_labels:
+		return
+	for ship in contacts:
+		if ship.get("faction", "") != "civilian":
+			continue
+		var projected := projection(ship.position)
+		var text := contact_tag(ship)
+		var label_size := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, label_font_size)
+		var marker_scale: float = projected.scale * size_for_kind(ship.kind)
+		var label_point: Vector2 = projected.point + Vector2(-label_size.x * 0.5, 22.0 * marker_scale)
+		var rect := _protect_label_rect(label_point, label_size)
+		if civilian_hull_bar:
+			rect = rect.merge(_civilian_hull_bar_rect(marker_scale, label_point, label_size).grow(1.0))
+		_protect_label_rects.append(rect)
+
+func _protect_label_rect(label_point: Vector2, label_size: Vector2) -> Rect2:
+	return Rect2(label_point + Vector2(-1.0, -label_size.y * 0.78), label_size + Vector2(2.0, 1.0))
+
+## Where a fighter label goes: as is, or one or two lines lower, or left out
+## (Vector2.INF) when every place overlaps a label already drawn.
+func _protect_place_label(label_point: Vector2, label_size: Vector2) -> Vector2:
+	for step in range(3):
+		var at := label_point + Vector2(0.0, label_size.y * 0.9 * step)
+		var rect := _protect_label_rect(at, label_size)
+		var clear := true
+		for other in _protect_label_rects:
+			if rect.intersects(other):
+				clear = false
+				break
+		if clear:
+			_protect_label_rects.append(rect)
+			return at
+	return Vector2.INF
 
 ## 1.2.7: "saved" (every ship), "partial" (some lost) or "lost" (none saved).
 func protect_outcome() -> String:

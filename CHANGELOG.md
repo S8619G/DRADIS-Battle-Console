@@ -2,6 +2,74 @@
 
 Functional changes in each version, newest first. Earlier development-stage notes are in `docs/history/`.
 
+## 1.2.9 (2026-10-14)
+
+Builds on DRADIS Battle Console 1.2.8.
+
+The Protect the fleet changes apply only to the Protect the fleet round. The main game (waves, Basestars, missiles, Raptors, Defense Battery, scoring) plays exactly as in 1.2.8. Every new value has its own Inspector export; the script defaults keep 1.2.8 behaviour and the scene turns the new switches on.
+
+### Protect the fleet: round sounds
+
+- A soft tick on each Viper hit (-22 dB), a louder Raider explosion (-13 dB), a warning the first time a ship is attacked (-14 dB) and when it reaches critical hull (-12 dB).
+- A boom sized by the civilian ship lost: small -14 dB, medium -11 dB (new medium boom), large -8 dB. A Viper downed by a Raider plays the fighter-lost boom (-15 dB).
+- Contacts > Protect the Fleet > Round Sounds 1.2.9: Protect Round Sounds (on) and one volume for each sound.
+
+### Protect the fleet: damaged ships
+
+- Civilian ships keep Civilian Color as they take damage (no fade to the damaged colour). A thin hull bar sits under each label: dark track, thin outline, filled in Civilian Color.
+- A ship flashes white for about 0.15 s each time a Raider hits it. Critical ships still blink.
+- Contacts > Protect the Fleet > Damaged Ships 1.2.9: Civilian Hull Bar (on), Civilian Hull Bar Width (38), Civilian Hit Flash Seconds (0.15).
+
+### Protect the fleet: round counter
+
+- During the round the alert box reads PROTECT THE FLEET with SHIPS n OF m (Civilian Color), RAIDERS n LEFT (red) and TIME m:ss.
+- Contacts > Protect the Fleet > Round Counter 1.2.9: Protect Round Counter (on).
+
+### Protect the fleet: challenge mix
+
+- Each round picks some challenges at random. How many: the set number (Easy one fewer, Hard one more), from 0 to 3.
+  - Waves: the Raiders arrive in 2 or 3 groups. The next group jumps in 6 to 10 seconds after the last, without waiting for the scope to clear.
+  - Fewer Vipers: 1 or 2 fewer launches than Raiders, never more than a third fewer.
+  - Gang up: Raiders prefer a ship already under attack and the most damaged ship.
+- Contacts > Protect the Fleet > Challenge Mix 1.2.9.
+
+### Protect the fleet: dogfights
+
+- About 60% of Raiders that a Viper engages break off to fight it; the rest keep attacking the ship.
+- Hits land only from behind (tail range 0.07, tail cone 0.35), for both sides. A Viper with a Raider on its tail weaves.
+- Wingman help on both sides: once a second, a free fighter within 0.28 has a 30% chance to go after the attacker of a nearby friend.
+- A Raider behind a Viper fires every 0.7 s; each shot downs the Viper with a 7% chance. This replaces the one 1-in-6 return-fire roll per Raider in this round. These losses count in VIPERS LOST and score as Viper losses.
+- Vipers stay out all round (they ignore the sortie timer) and fly home when the round ends.
+- Labels that would sit on top of each other move down a line or are left out, so bunched dogfights stay readable. Civilian ship labels always show.
+- Contacts > Protect the Fleet > Dogfights 1.2.9.
+
+### Protect the fleet: smarter ships
+
+- Large ships now drift slowly away from attackers too (0.02 scope radii a second).
+- Self-repair: after 3 seconds with no Raider attacking, a ship regains 4% hull a second, up to 75%.
+- Contacts > Protect the Fleet > Smarter Ships 1.2.9.
+
+### Protect the fleet: repair Raptor
+
+- From set 3 (any set on Hard), in rounds with 2 or more challenges, there is a 50% chance of a bonus Raptor. It flies to the most damaged ship and repairs it up to 100% (8% a second), then moves to the next. It leaves when the round ends.
+- The RAPTORS readout counts only your own Raptors, so it does not show the repair Raptor.
+- Contacts > Protect the Fleet > Repair Raptor 1.2.9.
+
+### Balance
+
+- A bit more danger on Normal, from set 3: 1 extra Raider (Protect Extra Raiders 1, within the 12-Raider limit) and Raiders destroy ships faster (Protect Later Kill Time Factor 0.75; Normal set 3 kill time 12 s instead of 16 s, set 4 10.5 s instead of 14 s). Easy is unchanged. Hard is unchanged unless Protect More Danger On Hard is ticked. Sets 1 and 2 are unchanged.
+- Computer runs, Normal, 40 rounds per set, with all 1.2.9 round changes on. Steady player: set 3 saves 88.5% of ships (97.5% without the extra danger), set 4 86.0% (93.4%); 2.1 and 2.5 Vipers lost a round; rounds about 34 and 37 s; no ship lost before 14 s; no whole fleet lost. Fast player: set 3 97.5%, set 4 94.2%.
+- Same runs, Easy: 95-99% saved on sets 3 and 4. Hard (default, no extra danger): steady player 86.9% and 82.6%, fast player 91.0% and 92.6%. With More Danger On Hard ticked: steady player about 75%, fast player about 90%.
+- Contacts > Protect the Fleet > Challenge Mix 1.2.9: Protect Extra Raiders From Set (3), Protect Extra Raiders (1 in the scene), Protect Later Kill Time Factor (0.75 in the scene), Protect More Danger On Hard (off).
+
+### Three DRADIS rings
+
+- Three rings turn on one 2.0 s cycle: a vertical ring, pinned upright to the top and bottom of the dome outline (no wobble), half a cycle out of step; a horizontal ring hinged front to back; and a second horizontal ring hinged left to right at the same angle, front edge rising.
+- Ring colour, thickness and glow are unchanged. Ring brightness: Three Ring Vertical / Front Back / Left Right Strength, 0.75. The scope gives off about 3% more light in total than 1.2.8 (measured 1.034 of 1.2.8); 0.6 gives the same light as 1.2.8.
+- Afterglow: the horizontal rings 0.4 s (Three Ring Horizontal Trail Seconds), the vertical ring 0.2 s (Ring Trail Seconds).
+- Pulse rings are three times slower: Ripple Period Seconds 6.0 with Ripple Count 3, so a new pulse still starts every 2.0 s on the sweep beat.
+- Dome > Three Rings: Three Rings Enabled (on in the scene). Unticking it gives the 1.2.8 rings; setting Ripple Period Seconds back to 2.0 gives the 1.2.8 pulse.
+
 ## 1.2.8 (2026-10-13)
 
 Builds on DRADIS Battle Console 1.2.7.
